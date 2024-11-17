@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FormControl, FormField, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
 import { Control, FieldPath } from "react-hook-form";
@@ -14,6 +14,13 @@ interface CustomInput {
   placeholder: string;
 }
 const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
+  const [type, setType] = useState("text");
+  useEffect(() => {
+    if (name === "password") {
+      setType("password");
+    }
+  }, [name]);
+
   return (
     <FormField
       control={control}
@@ -26,8 +33,7 @@ const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
               <Input
                 placeholder={placeholder}
                 className="input-class"
-                //cause error SSR React Nextjs
-                type={name === 'password' ? 'password':'text'}
+                type={type}
                 {...field}
               />
             </FormControl>

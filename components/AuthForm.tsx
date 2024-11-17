@@ -27,15 +27,29 @@ const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const formSchema = authFormSchema(type);
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: type === "sign-up"
+    ? {
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        address1: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        dateOfBirth: "",
+        ssn: "",
+      }
+    : {
+        email: "",
+        password: "",
+      },
   });
 
   // 2. Define a submit handler.
@@ -55,9 +69,15 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         })
-        //console.log('AuthForm-submit response:',response);
-        if (response) {
-          router.push('/')
+        console.log('AuthForm-submit response:',response);
+        // Check if the response contains 'code' (which would indicate an error)
+        if (response && 'code' in response) {
+            const errorMessage = response?.message || response?.type || "An unexpected error occurred.";
+            setError(errorMessage);
+        } else {
+            // Successful response, which doesn't have a 'code'
+            setError(null); // Clear any previous error on successful login
+            router.push('/'); // Redirect to the home page or another page on success
         }
       }
     } catch (error){
@@ -102,7 +122,7 @@ const AuthForm = ({ type }: { type: string }) => {
                 <>
                   <div className="flex gap-4">
                     <CustomInput control={form.control} name='firstName' label="First Name" placeholder='Enter your first name' />
-                    <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your first name' />
+                    <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your last name' />
                   </div>
                   <CustomInput control={form.control} name='address1' label="Address" placeholder='Enter your specific address' />
                   <CustomInput control={form.control} name='city' label="City" placeholder='Enter your city' />
@@ -139,6 +159,7 @@ const AuthForm = ({ type }: { type: string }) => {
                   ) : type === 'sign-in'
                     ? 'Sign In' : 'Sign Up'}
                 </Button>
+                {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
               </div>              
             </form>
           </Form>

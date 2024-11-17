@@ -5,9 +5,9 @@ import { getLoggedInUser } from "@/lib/actions/user.actions";
 import React from "react";
 
 const Home = async () => {
-  // const loggedIn = {firstName: "uN70v3", lastName: "Fusion", email: "uN70v3@gmail.com",};
+  //const loggedIn = {name: "uN70v3 Fusion", email: "uN70v3@gmail.com",};
   const loggedIn = await getLoggedInUser();
-  console.log('root-page loggedIn:',loggedIn);
+  //console.log('root-page loggedIn:',loggedIn);
   return (
     <section className="home">
       <div className="home-content">
