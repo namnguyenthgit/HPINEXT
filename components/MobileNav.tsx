@@ -37,7 +37,10 @@ const MobileNav = ({ user }: MobileNavProps) => {
             <SheetTitle>
               Menu
             </SheetTitle>
-          </VisuallyHidden>
+            <SheetDescription>
+              Navigation menu for the mobile app.
+            </SheetDescription>
+          </VisuallyHidden>          
           <Link
             href="/"
             className="cursor-pointer flex items-center gap-1 px-4"

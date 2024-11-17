@@ -12,11 +12,11 @@ export default async function RootLayout({
   //const loggIn = { firstName: "uN70ve", lastName: "Fusion" };
   const loggedIn = await getLoggedInUser();
   if (!loggedIn) {
-    console.log("No logged-in user, redirecting...");
+    //console.log("No logged-in user, redirecting...");
     redirect("/sign-in");
   }
 
-  console.log("Logged-in user:", loggedIn); // Check if user is correctly fetched
+  //console.log("Logged-in user:", loggedIn); // Check if user is correctly fetched
   
   return (
     <main className="flex h-screen w-full font-inter">

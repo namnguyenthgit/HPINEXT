@@ -69,7 +69,7 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         })
-        console.log('AuthForm-submit response:',response);
+        //console.log('AuthForm-submit response:',response);
         // Check if the response contains 'code' (which would indicate an error)
         if (response && 'code' in response) {
             const errorMessage = response?.message || response?.type || "An unexpected error occurred.";

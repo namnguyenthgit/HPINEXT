@@ -4,7 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 const BankCard = ({ account, userName }: CreditCardProps) => {
-  console.log(account);
+  //console.log(account);
   return (
     <div className="flex flex-col">
       <Link

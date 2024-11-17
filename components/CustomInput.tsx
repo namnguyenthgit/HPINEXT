@@ -21,6 +21,9 @@ const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
     }
   }, [name]);
 
+  // Generate a unique id based on the field name
+  const id = `${name}-input`;
+
   return (
     <FormField
       control={control}
@@ -31,6 +34,7 @@ const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
           <div className="flex w-full flex-col">
             <FormControl>
               <Input
+                id={id}
                 placeholder={placeholder}
                 className="input-class"
                 type={type}
