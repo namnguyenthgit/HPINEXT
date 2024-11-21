@@ -1,6 +1,6 @@
 'use server';
 
-import { ID } from "node-appwrite";
+import { ID, Query } from "node-appwrite";
 import { createAdminClient, createSessionClient } from "../appwrite";
 import { cookies } from "next/headers";
 import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 import { PlaidLinkTokenResponse } from "@/types/plaid";
 import { AxiosError } from "axios";
+import { error } from "console";
 
 interface SignInError {
   code?: number;
@@ -24,11 +25,27 @@ const {
   APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
 } = process.env;
 
+export const getUserInfo = async ({ userId }: getUserInfoProps) => {
+  try {
+    const { database } = await createAdminClient();
+    const user = await database.listDocuments(
+      DATABASE_ID!,
+      USER_COLLECTION_ID!,
+      [Query.equal('userId',[userId])]
+    )
+    if (!user) throw error;
+    return parseStringify(user.documents[0]);
+  } catch (error) {
+    console.error("An error occur while getBanks:", error);
+  }
+}
+
 export const signIn = async ({ email, password }: signInProps) => {
     try {
         //Mutation/ Database / Make fetch
         const { account } = await createAdminClient();
         const session = await account.createEmailPasswordSession(email, password);
+
         //console.log('useraction-signin response:',response);
         // Use cookies() with await
         const cookieStore = await cookies();
@@ -38,7 +55,8 @@ export const signIn = async ({ email, password }: signInProps) => {
           sameSite: "strict",
           secure: true,
         });
-        return parseStringify(session);
+        const user = await getUserInfo({ userId: session.userId})
+        return parseStringify(user);
     } catch (error: unknown) {
       const typedError = error as SignInError; // Cast to known type
       console.error('Error:', typedError);
@@ -89,10 +107,10 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
       
       const cookieStore = await cookies();
       cookieStore.set("appwrite-session", session.secret, {
-      path: "/",
-      httpOnly: true,
-      sameSite: "strict",
-      secure: true,
+        path: "/",
+        httpOnly: true,
+        sameSite: "strict",
+        secure: true,
       });
 
       //return parseStringify(newUserAccount);
@@ -118,7 +136,8 @@ export async function getLoggedInUser() {
     const { account } = await createSessionClient();
     // Check if the session is authorized for the required actions
     try {
-      const user = await account.get(); // Make sure the session has the correct scope
+      const result = await account.get(); // Make sure the session has the correct scope
+      const user = await getUserInfo({ userId: result.$id})
       return parseStringify(user);
     } catch (accountError) {
       console.error("Error fetching user:", accountError);
@@ -257,3 +276,33 @@ export const exchangePublicToken = async ({
     console.error("An error occur while creating exchange token:", error);
   }
 }
+
+export const getBanks = async ({ userId }: getBanksProps) => {
+  try {
+    const { database } = await createAdminClient();
+    const banks = await database.listDocuments(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      [Query.equal('userId',[userId])]
+    )
+    if (!banks) throw error;
+    return parseStringify(banks.documents);
+  } catch (error) {
+    console.error("An error occur while getBanks:", error);
+  }
+}
+
+export const getBank = async ({ documentId }: getBankProps) => {
+  try {
+    const { database } = await createAdminClient();
+    const bank = await database.listDocuments(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      [Query.equal('$id',[documentId])]
+    )
+    if (!bank) throw error;
+    return parseStringify(bank.documents[0]);
+  } catch (error) {
+    console.error("An error occur while getBanks:", error);
+  }
+} 
