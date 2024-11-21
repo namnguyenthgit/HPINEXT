@@ -4,11 +4,13 @@ import { ID } from "node-appwrite";
 import { createAdminClient, createSessionClient } from "../appwrite";
 import { cookies } from "next/headers";
 import { encryptId, extractCustomerIdFromUrl, parseStringify } from "../utils";
-import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
+import { CountryCode, PlaidError, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
 import { plaidClient } from "@/lib/plaid";
 import { stringify } from "querystring";
 import { revalidatePath } from "next/cache";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
+import { PlaidLinkTokenResponse } from "@/types/plaid";
+import { AxiosError } from "axios";
 
 interface SignInError {
   code?: number;
@@ -52,8 +54,8 @@ export const signIn = async ({ email, password }: signInProps) => {
     }
 }
 
-export const signUp = async (userData: SignUpParams) => {
-  const { email, password, firstName, lastName } = userData;
+export const signUp = async ({password, ...userData} : SignUpParams) => {
+  const { email, firstName, lastName } = userData;
   let newUserAccount;
   try {
       // Create a user account
@@ -61,7 +63,6 @@ export const signUp = async (userData: SignUpParams) => {
       const { account, database } = await createAdminClient();
 
       newUserAccount = await account.create(ID.unique(), email, password, `${firstName} ${lastName}`);
-
       if(!newUserAccount) throw new Error('Error creating user')
 
       // create dwolla customer
@@ -69,8 +70,8 @@ export const signUp = async (userData: SignUpParams) => {
         ...userData,
         type: "personal",
       });
-
       if (!dwollaCustomerUrl) throw new Error("Error creating dwolla customer");
+
       const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
       const newUser = await database.createDocument(
         DATABASE_ID!,
@@ -79,8 +80,8 @@ export const signUp = async (userData: SignUpParams) => {
         {
           ...userData,
           userId: newUserAccount.$id,
-          dwollaCustomerUrl,
           dwollaCustomerId,
+          dwollaCustomerUrl,          
         }
       );
 
@@ -94,7 +95,9 @@ export const signUp = async (userData: SignUpParams) => {
       secure: true,
       });
 
+      //return parseStringify(newUserAccount);
       return parseStringify(newUser);
+
   } catch (error) {
       console.error('Error', error);
   }
@@ -140,22 +143,57 @@ export const logoutAccount = async () => {
 
 export const createLinkToken = async (user: User) => {
   try {
+    console.log('Creating link token for user:', user);
     const tokenParams = {
       user: {
         client_user_id: user.$id
       },
-      client_name: user.name,
+      client_name: `${user.firstName} ${user.lastName}`,
       products: ['auth'] as Products[],
       language: 'en',
       country_codes: ['US'] as CountryCode[],
     }
 
     const response = await plaidClient.linkTokenCreate(tokenParams);
-    return stringify({ linkToken: response.data.link_token })
+    console.log('Plaid Response:', response.data); // Debugging
+    return { linkToken: response.data.link_token }; // Return as an object 
   } catch (error) {
-    console.log(error);
+    console.error('Error creating link token:', error);
+    return null; // Ensure the function does not throw
   }
 }
+
+export const createBankAccount = async ({
+  userId,
+  bankId,
+  accountId,
+  accessToken,
+  fundingSourceUrl,
+  shareableId,
+}: createBankAccountProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const bankAccount = await database.createDocument(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      ID.unique(),
+      {
+        userId,
+        bankId,
+        accountId,
+        accessToken,
+        fundingSourceUrl,
+        shareableId,
+      }
+    );
+
+    return parseStringify(bankAccount);
+  } catch (error) {
+    console.error("Error", error);
+    return null;
+  }
+};
 
 export const exchangePublicToken = async ({
   publicToken,
@@ -204,7 +242,7 @@ export const exchangePublicToken = async ({
       accountId: accountData.account_id,
       accessToken,
       fundingSourceUrl,
-      sharableId: encryptId(accountData.account_id),
+      shareableId: encryptId(accountData.account_id),
     });
 
     // Revalidate the path to reflect the changes
@@ -219,35 +257,3 @@ export const exchangePublicToken = async ({
     console.error("An error occur while creating exchange token:", error);
   }
 }
-
-export const createBankAccount = async ({
-  accessToken,
-  userId,
-  accountId,
-  bankId,
-  fundingSourceUrl,
-  sharableId,
-}: createBankAccountProps) => {
-  try {
-    const { database } = await createAdminClient();
-
-    const bankAccount = await database.createDocument(
-      DATABASE_ID!,
-      BANK_COLLECTION_ID!,
-      ID.unique(),
-      {
-        accessToken,
-        userId,
-        accountId,
-        bankId,
-        fundingSourceUrl,
-        sharableId,
-      }
-    );
-
-    return parseStringify(bankAccount);
-  } catch (error) {
-    console.error("Error", error);
-    return null;
-  }
-};
