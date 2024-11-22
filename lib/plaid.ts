@@ -1,11 +1,11 @@
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox, // Change this to `development` or `production` as needed
+  basePath: PlaidEnvironments[process.env.PLAID_ENV || 'sandbox'],
   baseOptions: {
     headers: {
-      'plaid-client-id': process.env.PLAID_CLIENT_ID, // Correct casing
-      'plaid-secret': process.env.PLAID_SECRET,       // Correct casing
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID, // Correct casing
+      'PLAID-SECRET': process.env.PLAID_SECRET,       // Correct casing
     },
   },
 });

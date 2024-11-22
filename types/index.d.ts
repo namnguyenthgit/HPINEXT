@@ -60,7 +60,7 @@ declare type Account = {
   type: string;
   subtype: string;
   appwriteItemId: string;
-  sharableId: string;
+  shareableId: string;
 };
 
 declare type Transaction = {
@@ -82,6 +82,33 @@ declare type Transaction = {
   receiverBankId: string;
 };
 
+// Plaid Transaction Interface  
+declare interface PlaidTransaction {  
+  transaction_id: string;  
+  name: string;  
+  payment_channel: string;  
+  account_id: string;  
+  amount: number;  
+  pending: boolean;  
+  category?: string[];  
+  date: string;  
+  logo_url?: string;  
+}  
+
+// Formatted Transaction Interface  
+declare interface FormattedTransaction {  
+  id: string;  
+  name: string;  
+  paymentChannel: string;  
+  type: string;  
+  accountId: string;  
+  amount: number;  
+  pending: boolean;  
+  category: string;  
+  date: string;  
+  image?: string;  
+}  
+
 declare type Bank = {
   $id: string;
   accountId: string;
@@ -89,7 +116,7 @@ declare type Bank = {
   accessToken: string;
   fundingSourceUrl: string;
   userId: string;
-  sharableId: string;
+  shareableId: string;
 };
 
 declare type AccountTypes =

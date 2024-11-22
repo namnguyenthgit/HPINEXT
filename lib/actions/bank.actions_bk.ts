@@ -68,10 +68,6 @@ export const getAccount = async ({ appwriteItemId }: getAccountProps) => {
   try {
     // get bank from db
     const bank = await getBank({ documentId: appwriteItemId });
-    if (!bank) {  
-      console.log("No bank found for ID:", appwriteItemId);  
-      return null;  
-    }
 
     // get account info from plaid
     const accountsResponse = await plaidClient.accountsGet({
@@ -155,7 +151,7 @@ export const getTransactions = async ({
   accessToken,
 }: getTransactionsProps) => {
   let hasMore = true;
-  let transactions: FormattedTransaction[] = [];
+  let transactions: any = [];
 
   try {
     // Iterate through each page of new transaction updates for item
@@ -166,7 +162,7 @@ export const getTransactions = async ({
 
       const data = response.data;
 
-      transactions = response.data.added.map((transaction: PlaidTransaction) => ({
+      transactions = response.data.added.map((transaction) => ({
         id: transaction.transaction_id,
         name: transaction.name,
         paymentChannel: transaction.payment_channel,
@@ -185,7 +181,6 @@ export const getTransactions = async ({
     return parseStringify(transactions);
   } catch (error) {
     console.error("An error occurred while getting the accounts:", error);
-    return [];
   }
 };
 

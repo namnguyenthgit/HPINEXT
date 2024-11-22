@@ -4,41 +4,28 @@ import RightSidebar from "@/components/RightSidebar";
 import TotalBalanceBox from "@/components/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { redirect } from "next/navigation";
 import React from "react";
 
-const Home = async (props: SearchParamProps) => {
-  // Get the searchParams after the component starts executing
-  const { searchParams } = props;
+const Home = async ({ searchParams: { id, page } }: SearchParamProps) => {
+  const currentPage = Number(page as string) || 1;
 
-  // Move this logic after all async operations
+  //const loggedIn = {name: "uN70v3 Fusion", email: "uN70v3@gmail.com",};
   const loggedIn = await getLoggedInUser();
-
-  // Add null check here
-  if (!loggedIn) {
-    redirect("/sign-in");
-    // return null;
-  }
+  //console.log('root-page loggedIn:',loggedIn);
 
   const accounts = await getAccounts({
     userId: loggedIn.$id,
   });
 
   if (!accounts) return null;
-
   const accountsData = accounts?.data;
-
-  // Handle searchParams after async operations
-  const pageParam = searchParams.page;
-  const currentPage =
-    Number(Array.isArray(pageParam) ? pageParam[0] : pageParam) || 1;
-
-  const idParam = searchParams.id;
-  const appwriteItemId =
-    (Array.isArray(idParam) ? idParam[0] : idParam) ||
-    accountsData[0]?.appwriteItemId;
-
+  const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
   const account = await getAccount({ appwriteItemId });
+
+  // console.log({
+  //   accountsData,
+  //   account
+  // })
 
   return (
     <section className="home">
@@ -66,7 +53,7 @@ const Home = async (props: SearchParamProps) => {
       </div>
       <RightSidebar
         user={loggedIn}
-        transactions={account?.transactions}
+        transactions={accounts?.transactions}
         banks={accountsData?.slice(0, 2)}
       />
     </section>
