@@ -168,7 +168,7 @@ export const createLinkToken = async (user: User) => {
         client_user_id: user.$id
       },
       client_name: `${user.firstName} ${user.lastName}`,
-      products: ['auth'] as Products[],
+      products: ['auth','transactions'] as Products[],
       language: 'en',
       country_codes: ['US'] as CountryCode[],
     }
@@ -181,6 +181,27 @@ export const createLinkToken = async (user: User) => {
     return null; // Ensure the function does not throw
   }
 }
+
+export const updateLinkToken = async (user: User, accessToken: string) => {  
+  try {  
+    const tokenParams = {  
+      user: {  
+        client_user_id: user.$id  
+      },  
+      client_name: `${user.firstName} ${user.lastName}`,  
+      access_token: accessToken,  
+      products: ['auth', 'transactions'] as Products[],  
+      language: 'en',  
+      country_codes: ['US'] as CountryCode[],  
+    }  
+
+    const response = await plaidClient.linkTokenCreate(tokenParams);  
+    return { linkToken: response.data.link_token };  
+  } catch (error) {  
+    console.error('Error creating update link token:', error);  
+    return null;  
+  }  
+}  
 
 export const createBankAccount = async ({
   userId,

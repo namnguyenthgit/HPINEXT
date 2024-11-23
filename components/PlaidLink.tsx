@@ -9,39 +9,88 @@ import { useRouter } from "next/navigation";
 import {
   createLinkToken,
   exchangePublicToken,
+  updateLinkToken,
 } from "@/lib/actions/user.actions";
 import Image from "next/image";
+import { RefreshCcw } from "lucide-react";
 
-const PlaidLink = ({ user, variant }: PlaidLinkProps) => {
+interface PlaidLinkProps {  
+  user: User;  
+  variant?: "primary" | "ghost" | "default";  
+  accessToken?: string; // Add this for update functionality  
+  onSuccess?: () => void;  
+}
+
+const PlaidLink = ({ user, variant = "default", accessToken, onSuccess }: PlaidLinkProps) => { 
   const router = useRouter();
   const [linkToken, setLinkToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     const fetchLinkToken = async () => {
-      const response = await createLinkToken(user);
-      console.log("Link Token Response:", response); // Debugging
-      if (response?.linkToken) {
-        setLinkToken(response.linkToken); // Set the token correctly
-      } else {
-        console.error("Failed to fetch link token", response); // Log full response
+      setIsLoading(true);
+      try {
+        const response = accessToken  
+        ? await updateLinkToken(user, accessToken)  
+        : await createLinkToken(user);
+
+        if (response?.linkToken) {  
+          setLinkToken(response.linkToken);  
+        } else {  
+          console.error("Failed to fetch link token", response)  
+        }
+      } catch (error) {
+        console.error("Error fetching link token:", error);
+      } finally {  
+        setIsLoading(false);  
       }
     };
 
     fetchLinkToken();
-  }, [user]);
+  }, [user, accessToken]);
+
+  const handleSuccess = useCallback(  
+    async (public_token: string) => {  
+      try {  
+        if (accessToken) {  
+          // For updates, we don't need to exchange the token  
+          if (onSuccess) onSuccess();  
+        } else {  
+          // For new connections, exchange the token  
+          await exchangePublicToken({ publicToken: public_token, user });  
+        }  
+        router.refresh();  
+      } catch (error) {  
+        console.error("Error in Plaid success handler:", error);  
+      }  
+    },  
+    [router, user, accessToken, onSuccess]  
+  );
 
   // Use Plaid Link
   const { open, ready } = usePlaidLink({
     token: linkToken || "",
-    onSuccess: useCallback(
-      async (public_token: string) => {
-        console.log("Public token:", public_token);
-        // Replace with your token exchange function
-        await exchangePublicToken({ publicToken: public_token, user });
-        router.push("/");
-      },
-      [router, user]
-    ),
+    onSuccess: handleSuccess,
+    onExit: (err, metadata) => {  
+      if (err) console.error("Plaid Link Error:", err);  
+      setIsLoading(false);  
+    },
   });
+
+  // Render update button if accessToken is provided  
+  if (accessToken) {  
+    return (  
+      <Button  
+        onClick={() => open()}  
+        disabled={!ready || isLoading}  
+        variant="outline"  
+        className="w-full flex items-center justify-center gap-2"  
+      >  
+        <RefreshCcw className="w-4 h-4" />  
+        Update Bank Connection  
+      </Button>  
+    );  
+  }
 
   return (
     <>

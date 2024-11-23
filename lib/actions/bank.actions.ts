@@ -183,9 +183,11 @@ export const getTransactions = async ({
     }
 
     return parseStringify(transactions);
-  } catch (error) {
-    console.error("An error occurred while getting the accounts:", error);
-    return [];
+  } catch (error: any) {
+    //console.error("An error occurred while getting the accounts:", error);
+     // Detailed error logging   
+     console.log('Status:', error.response?.status);   
+     return [];
   }
 };
 
