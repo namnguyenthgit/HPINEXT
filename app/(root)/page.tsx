@@ -10,6 +10,7 @@ import React from "react";
 const Home = async (props: SearchParamProps) => {
   // Get the searchParams after the component starts executing
   const { searchParams } = props;
+  const params = await searchParams;
 
   // Move this logic after all async operations
   const loggedIn = await getLoggedInUser();
@@ -29,11 +30,11 @@ const Home = async (props: SearchParamProps) => {
   const accountsData = accounts?.data;
 
   // Handle searchParams after async operations
-  const pageParam = searchParams.page;
+  const pageParam = params.page;
   const currentPage =
     Number(Array.isArray(pageParam) ? pageParam[0] : pageParam) || 1;
 
-  const idParam = searchParams.id;
+  const idParam = params.id;
   const appwriteItemId =
     (Array.isArray(idParam) ? idParam[0] : idParam) ||
     accountsData[0]?.appwriteItemId;

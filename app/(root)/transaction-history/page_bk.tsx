@@ -4,13 +4,12 @@ import TransactionsTable from "@/components/TransactionsTable";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { formatAmount } from "@/lib/utils";
-import { redirect } from "next/navigation";
 import React from "react";
 
-const TransactionHistory = async ({ searchParams }: SearchParamProps) => { 
-   // Await the searchParams  
-  const params = await searchParams;  
-  const currentPage = Number(params.page as string) || 1;
+const TransactionHistory = async ({
+  searchParams: { id, page },
+}: SearchParamProps) => {
+  const currentPage = Number(page as string) || 1;
 
   //const loggedIn = {name: "uN70v3 Fusion", email: "uN70v3@gmail.com",};
   const loggedIn = await getLoggedInUser();
@@ -19,15 +18,9 @@ const TransactionHistory = async ({ searchParams }: SearchParamProps) => {
     userId: loggedIn.$id,
   });
 
-  // Add null check for loggedIn user  
-  if (!loggedIn) {  
-    redirect("/sign-in");  
-    // The code won't execute past this point after redirect  
-  }
-
   if (!accounts) return null;
   const accountsData = accounts?.data;
-  const appwriteItemId = (params.id as string) || accountsData[0]?.appwriteItemId;
+  const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
   const account = await getAccount({ appwriteItemId });
 
   const rowsPerPage = 10;

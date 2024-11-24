@@ -2,17 +2,12 @@ import BankCard from "@/components/BankCard";
 import HeaderBox from "@/components/HeaderBox";
 import { getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { redirect } from "next/navigation";
 import React from "react";
 
 const MyBanks = async () => {
   //const loggedIn = {name: "uN70v3 Fusion", email: "uN70v3@gmail.com",};
   const loggedIn = await getLoggedInUser();
   //console.log('root-page loggedIn:',loggedIn);
-
-  if (!loggedIn) {  
-    redirect("/sign-in");  
-  } 
 
   const accounts = await getAccounts({
     userId: loggedIn.$id,
@@ -32,7 +27,7 @@ const MyBanks = async () => {
             {accounts &&
               accounts.data.map((a: Account) => (
                 <BankCard
-                  key={a.appwriteItemId}
+                  key={accounts.id}
                   account={a}
                   userName={loggedIn?.firstName}
                 />
