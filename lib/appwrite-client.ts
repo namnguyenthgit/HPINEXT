@@ -1,15 +1,18 @@
-import { Client, Databases, Account } from 'appwrite';  
+"use client";  
 
-// Create a new client instance  
-const client = new Client()  
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)  
-    .setProject(process.env.NEXT_PUBLIC_PROJECT_ID!);  
+import { Client, Databases, Account } from 'appwrite'; 
+import { appwriteConfig } from './appwrite-config';
 
-// Create databases instance  
-const databases = new Databases(client);  
+export let client: Client | null = null;  
+export let databases: Databases | null = null;  
+export let account: Account | null = null;  
 
-// Create account instance  
-const account = new Account(client);  
+if (typeof window !== "undefined") {  
+  client = new Client();  
+  client  
+    .setEndpoint(appwriteConfig.endpoint)  
+    .setProject(appwriteConfig.projectId);  
 
-// Export all instances  
-export { client, databases, account };
+  databases = new Databases(client);  
+  account = new Account(client);  
+}

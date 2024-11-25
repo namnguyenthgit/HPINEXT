@@ -1,16 +1,20 @@
-import RealtimeUsers from "@/components/RealtimeUsers";
-import { getAllUsers } from "@/lib/actions/user.actions";
+import RealtimeUsers from "@/components/RealtimeUsers";  
+import { getAllUsers } from "@/lib/actions/user.actions";  
 
-const UserList = async () => {
-  // Fetch initial users on the server
-  const users = await getAllUsers(); // Modify your getUserInfo to fetch all users when needed
+// Add this to prevent caching  
+export const dynamic = 'force-dynamic';  
+// Or alternatively, use revalidate  
+// export const revalidate = 0;  
 
-  return (
-    <div>
-      <h1 className="text-3xl font-bold p-4">User Management</h1>
-      <RealtimeUsers initialUsers={users || []} />
-    </div>
-  );
-};
+const UserList = async () => {  
+  const users = await getAllUsers();  
+
+  return (  
+    <div>  
+      <h1 className="text-3xl font-bold p-4">User Management</h1>  
+      <RealtimeUsers initialUsers={users || []} />  
+    </div>  
+  );  
+};  
 
 export default UserList;

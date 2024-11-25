@@ -12,7 +12,7 @@ export function useAccountSubscription(
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  console.log("Realtime event: start");
+  //console.log("Realtime event: start");
   useEffect(() => {
     setTransactions(initialTransactions);
 
@@ -21,7 +21,7 @@ export function useAccountSubscription(
       (response) => {
         try {
           setIsLoading(true);
-          console.log("Realtime event:", response);
+          //console.log("Realtime event:", response);
           const { events, payload } = response;
           const transactionPayload = payload as Transaction;
 

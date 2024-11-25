@@ -187,7 +187,7 @@ export const createLinkToken = async (user: User) => {
     }
 
     const response = await plaidClient.linkTokenCreate(tokenParams);
-    console.log('Plaid Response:', response.data); // Debugging
+    //console.log('Plaid Response:', response.data); // Debugging
     return { linkToken: response.data.link_token }; // Return as an object 
   } catch (error) {
     console.error('Error creating link token:', error);
