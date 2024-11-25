@@ -22,6 +22,22 @@ const {
   APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
 } = process.env;
 
+// Get all users  
+export const getAllUsers = async () => {  
+  try {  
+    const { database } = await createAdminClient();  
+    const users = await database.listDocuments(  
+      DATABASE_ID!,  
+      USER_COLLECTION_ID!  
+    );  
+    if (!users) throw error;  
+    return parseStringify(users.documents);  
+  } catch (error) {  
+    console.error("An error occurred while getting all users:", error);  
+    return [];  
+  }  
+}  
+
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
     const { database } = await createAdminClient();
