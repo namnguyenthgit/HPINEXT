@@ -14,6 +14,7 @@ import { parseStringify } from "../utils";
 import { getBanks, getBank } from "./user.actions";
 import { plaidClient } from "../plaid";
 import { getTransactionsByBankId } from "./transaction.actions";
+import { AxiosError } from "axios";
 
 // Get multiple bank accounts
 export const getAccounts = async ({ userId }: getAccountsProps) => {
@@ -183,11 +184,17 @@ export const getTransactions = async ({
     }
 
     return parseStringify(transactions);
-  } catch (error: any) {
+  } catch (error: unknown) {
     //console.error("An error occurred while getting the accounts:", error);
-     // Detailed error logging   
-     console.log('Status:', error.response?.status);   
-     return [];
+    // Detailed error logging   
+    const axiosError = error as AxiosError;
+    if (axiosError.response) {  
+      console.log('Error data:', axiosError.response.data);
+    } else {  
+      console.log('Error message:', axiosError.message);  
+    }  
+  
+    return []; 
   }
 };
 

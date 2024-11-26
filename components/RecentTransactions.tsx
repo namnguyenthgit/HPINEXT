@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,32 +5,18 @@ import { BankTabItem } from "./BankTabItem";
 import BankInfo from "./BankInfo";
 import TransactionsTable from "./TransactionsTable";
 import { Pagination } from "./Pagination";
-import { useAccountSubscription } from "@/lib/actions/client.bank.actions";
 
-interface RecentTransactionsProps {
-  accounts: Account[];
-  transactions: Transaction[];
-  appwriteItemId: string;
-  page: number;
-}
 const RecentTransactions = ({
   accounts,
-  transactions: initialTransactions,
+  transactions = [],
   appwriteItemId,
   page = 1,
 }: RecentTransactionsProps) => {
-  const { accountData, isLoading } = useAccountSubscription(
-    appwriteItemId,
-    initialTransactions
-  );
-  // Use real-time transactions if available, otherwise use initial transactions
-  const currentTransactions = accountData?.transactions || initialTransactions;
-  //console.log("Realtime event end: ", accountData?.transactions);
   const rowsPerPage = 10;
-  const totalPages = Math.ceil(currentTransactions.length / rowsPerPage);
+  const totalPages = Math.ceil(transactions.length / rowsPerPage);
   const indexOfLastTransaction = page * rowsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
-  const paginatedTransactions = currentTransactions.slice(
+  const currentTransactions = transactions.slice(
     indexOfFirstTransaction,
     indexOfLastTransaction
   );
@@ -40,12 +24,7 @@ const RecentTransactions = ({
   return (
     <section className="recent-transactions">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="recent-transactions-label">Recent Transactions</h2>
-          {isLoading && (
-            <span className="text-sm text-muted-foreground">Updating...</span>
-          )}
-        </div>
+        <h2 className="recent-transactions-label">Recent Transactions</h2>
         <Link
           href={`/transaction-history/?id=${appwriteItemId}`}
           className="view-all-btn"
@@ -77,7 +56,7 @@ const RecentTransactions = ({
               type="full"
             />
             {/* <TransactionsTable transactions={transactions} /> */}
-            <TransactionsTable transactions={paginatedTransactions} />
+            <TransactionsTable transactions={currentTransactions} />
             {totalPages > 1 && (
               <div className="my-4 w-full">
                 <Pagination totalPages={totalPages} page={page} />
