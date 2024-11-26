@@ -27,7 +27,7 @@ const RecentTransactions = ({
   );
   // Use real-time transactions if available, otherwise use initial transactions
   const currentTransactions = accountData?.transactions || initialTransactions;
-  console.log("Realtime event end: ", accountData?.transactions);
+  //console.log("Realtime event end: ", accountData?.transactions);
   const rowsPerPage = 10;
   const totalPages = Math.ceil(currentTransactions.length / rowsPerPage);
   const indexOfLastTransaction = page * rowsPerPage;

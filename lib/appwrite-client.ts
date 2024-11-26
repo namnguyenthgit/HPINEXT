@@ -1,18 +1,13 @@
-"use client";  
+// lib/appwrite-client.ts  
 
-import { Client, Databases, Account } from 'appwrite'; 
-import { appwriteConfig } from './appwrite-config';
+import { Client, Account, Databases } from 'appwrite';  
+import { appwriteConfig } from './appwrite-config';  
 
-export let client: Client | null = null;  
-export let databases: Databases | null = null;  
-export let account: Account | null = null;  
+const appwriteClient = new Client()  
+  .setEndpoint(appwriteConfig.endpoint)  
+  .setProject(appwriteConfig.projectId);  
 
-if (typeof window !== "undefined") {  
-  client = new Client();  
-  client  
-    .setEndpoint(appwriteConfig.endpoint)  
-    .setProject(appwriteConfig.projectId);  
+const account = new Account(appwriteClient);  
+const databases = new Databases(appwriteClient);  
 
-  databases = new Databases(client);  
-  account = new Account(client);  
-}
+export { appwriteClient as client, account, databases };

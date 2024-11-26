@@ -17,7 +17,7 @@ export function useAccountSubscription(
     setTransactions(initialTransactions);
 
     const unsubscribe = client.subscribe(
-      [`databases.${process.env.APPWRITE_DATABASE_ID}.collections.transactions.documents`],
+      [`databases.${process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID}.collections.transactions.documents`],
       (response) => {
         try {
           setIsLoading(true);
