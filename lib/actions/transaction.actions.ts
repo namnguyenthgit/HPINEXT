@@ -3,11 +3,10 @@
 import { ID, Query } from "node-appwrite";
 import { createAdminClient } from "../appwrite";
 import { parseStringify } from "../utils";
+import { appwriteConfig } from "../appwrite-config";
 
-const {
-  NEXT_PUBLIC_APPWRITE_DATABASE_ID: DATABASE_ID,
-  APPWRITE_TRANSACTION_COLLECTION_ID: TRANSACTION_COLLECTION_ID,
-} = process.env;
+const DATABASE_ID = appwriteConfig.databaseId
+const TRANSACTION_COLLECTION_ID = appwriteConfig.transactionCollectionId
 
 export const createTransaction = async (transaction: CreateTransactionProps) => {
   try {

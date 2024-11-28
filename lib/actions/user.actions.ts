@@ -9,6 +9,7 @@ import { plaidClient } from "@/lib/plaid";
 import { revalidatePath } from "next/cache";
 import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 import { error } from "console";
+import { appwriteConfig } from "../appwrite-config";
 
 interface SignInError {
   code?: number;
@@ -16,11 +17,9 @@ interface SignInError {
   message?: string;
 }
 
-const {
-  NEXT_PUBLIC_APPWRITE_DATABASE_ID: DATABASE_ID,
-  NEXT_PUBLIC_APPWRITE_USER_COLLECTION_ID: USER_COLLECTION_ID,
-  APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
-} = process.env;
+const DATABASE_ID = appwriteConfig.databaseId
+const USER_COLLECTION_ID = appwriteConfig.userCollectionId
+const BANK_COLLECTION_ID = appwriteConfig.bankCollectionId
 
 // Get all users  
 export const getAllUsers = async () => {  
@@ -50,6 +49,7 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
     return parseStringify(user.documents[0]);
   } catch (error) {
     console.error("An error occur while getBanks:", error);
+    return null;
   }
 }
 
