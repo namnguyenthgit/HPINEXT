@@ -14,6 +14,7 @@ import { parseStringify } from "../utils";
 import { getBanks, getBank } from "./user.actions";
 import { plaidClient } from "../plaid";
 import { getTransactionsByBankId } from "./transaction.actions";
+import { AxiosError } from "axios";
 
 // Get multiple bank accounts
 export const getAccounts = async ({ userId }: getAccountsProps) => {
@@ -68,6 +69,10 @@ export const getAccount = async ({ appwriteItemId }: getAccountProps) => {
   try {
     // get bank from db
     const bank = await getBank({ documentId: appwriteItemId });
+    if (!bank) {  
+      console.log("No bank found for ID:", appwriteItemId);  
+      return null;  
+    }
 
     // get account info from plaid
     const accountsResponse = await plaidClient.accountsGet({
@@ -151,7 +156,7 @@ export const getTransactions = async ({
   accessToken,
 }: getTransactionsProps) => {
   let hasMore = true;
-  let transactions: any = [];
+  let transactions: FormattedTransaction[] = [];
 
   try {
     // Iterate through each page of new transaction updates for item
@@ -162,7 +167,7 @@ export const getTransactions = async ({
 
       const data = response.data;
 
-      transactions = response.data.added.map((transaction) => ({
+      transactions = response.data.added.map((transaction: PlaidTransaction) => ({
         id: transaction.transaction_id,
         name: transaction.name,
         paymentChannel: transaction.payment_channel,
@@ -179,8 +184,17 @@ export const getTransactions = async ({
     }
 
     return parseStringify(transactions);
-  } catch (error) {
-    console.error("An error occurred while getting the accounts:", error);
+  } catch (error: unknown) {
+    //console.error("An error occurred while getting the accounts:", error);
+    // Detailed error logging   
+    const axiosError = error as AxiosError;
+    if (axiosError.response) {  
+      console.log('Error data:', axiosError.response.data);
+    } else {  
+      console.log('Error message:', axiosError.message);  
+    }  
+  
+    return []; 
   }
 };
 

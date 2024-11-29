@@ -20,6 +20,7 @@ interface SignInError {
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
 const BANK_COLLECTION_ID = appwriteConfig.bankCollectionId
+const PRIVATE_BANK_COLLECTION_ID = appwriteConfig.privateBankCollectionId
 
 // Get all users  
 export const getAllUsers = async () => {  
@@ -356,3 +357,50 @@ export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps)
     console.error("An error occur while getBanks:", error);
   }
 } 
+
+export const createPrivateBankAccount = async ({
+  privateBankId,
+  userId,
+  privateBankNumber,
+  availableBalance,
+  currentBalance,
+  type,
+  shareableId
+}: createPrivateBankAccountProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const privateBankAccount = await database.createDocument(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      ID.unique(),
+      {
+        userId,
+        privateBankId,
+        privateBankNumber,
+        availableBalance,
+        currentBalance,
+        type,
+        shareableId,
+      }
+    );
+    return parseStringify(privateBankAccount);
+  } catch (error) {
+    console.log('create Private Bank Error:',error)
+  }
+}
+
+export const getPrivateBanks = async ({ userId }: getBanksProps) => {
+  try {
+    const { database } = await createAdminClient();
+    const privateBanks = await database.listDocuments(
+      DATABASE_ID!,
+      PRIVATE_BANK_COLLECTION_ID!,
+      [Query.equal('userId',[userId])]
+    )
+    if (!privateBanks) throw error;
+    return parseStringify(privateBanks.documents);
+  } catch (error) {
+    console.error("An error occur while getBanks:", error);
+  }
+}

@@ -183,7 +183,7 @@ export function AddBank() {
           </Popover>
         </div>
 
-        <div className="payment-transfer_btn-box">
+        <div className="w-[250px]">
           <Button type="submit" className="payment-transfer_btn">
             {isLoading ? (
               <>

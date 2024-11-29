@@ -354,4 +354,14 @@ declare interface getBankProps {
 
 declare interface getBankByAccountIdProps {
   accountId: string;
-} 
+}
+
+declare interface createPrivateBankAccountProps {
+  privateBankId: string;
+  userId: string;
+  privateBankNumber: string;
+  availableBalance: string;
+  currentBalance: string;
+  type: string;
+  shareableId: string;
+}
