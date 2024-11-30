@@ -358,6 +358,8 @@ declare interface getBankByAccountIdProps {
 
 declare interface createPrivateBankAccountProps {
   privateBankId: string;
+  bankCardNumber: string;
+  bankName:string;
   userId: string;
   privateBankNumber: string;
   availableBalance: string;
