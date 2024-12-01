@@ -89,47 +89,74 @@ export const signIn = async ({ email, password }: signInProps) => {
 export const signUp = async ({password, ...userData} : SignUpParams) => {
   const { email, firstName, lastName } = userData;
   let newUserAccount;
+  let newUser;
+  let dwollaCustomerUrl;
   try {
       // Create a user account
       
-      const { account, database } = await createAdminClient();
-
+      const { account, database, user } = await createAdminClient();
+      // Step 1: Create Appwrite account 
       newUserAccount = await account.create(ID.unique(), email, password, `${firstName} ${lastName}`);
       if(!newUserAccount) throw new Error('Error creating user')
-
-      // create dwolla customer
-      const dwollaCustomerUrl = await createDwollaCustomer({
-        ...userData,
-        type: "personal",
-      });
-      if (!dwollaCustomerUrl) throw new Error("Error creating dwolla customer");
-
-      const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
-      const newUser = await database.createDocument(
-        DATABASE_ID!,
-        USER_COLLECTION_ID!,
-        ID.unique(),
-        {
-          ...userData,
-          userId: newUserAccount.$id,
-          dwollaCustomerId,
-          dwollaCustomerUrl,          
-        }
-      );
-
-      const session = await account.createEmailPasswordSession(email, password);
       
-      const cookieStore = await cookies();
-      cookieStore.set("appwrite-session", session.secret, {
-        path: "/",
-        httpOnly: true,
-        sameSite: "strict",
-        secure: true,
-      });
+      // Step 2: Create Dwolla customer
+      try {
+        dwollaCustomerUrl = await createDwollaCustomer({
+          ...userData,
+          type: "personal",
+        });
+        if (!dwollaCustomerUrl) throw new Error("Error creating dwolla customer");
+        const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
+        newUser = await database.createDocument(
+          DATABASE_ID!,
+          USER_COLLECTION_ID!,
+          ID.unique(),
+          {
+            ...userData,
+            userId: newUserAccount.$id,
+            dwollaCustomerId,
+            dwollaCustomerUrl,          
+          }
+        );
 
-      //return parseStringify(newUserAccount);
-      return parseStringify(newUser);
+        const session = await account.createEmailPasswordSession(email, password);
+        
+        const cookieStore = await cookies();
+        cookieStore.set("appwrite-session", session.secret, {
+          path: "/",
+          httpOnly: true,
+          sameSite: "strict",
+          secure: true,
+        });
 
+        //return parseStringify(newUserAccount);
+        return parseStringify(newUser);
+      } catch (error) {
+        // Cleanup if anything fails after initial account creation  
+        if (newUser) {  
+          try {  
+            // Delete the user document from collection  
+            await database.deleteDocument(  
+              DATABASE_ID!,  
+              USER_COLLECTION_ID!,  
+              newUser.$id  
+            );  
+          } catch (deleteError) {  
+            console.error('Error deleting user document during rollback:', deleteError);  
+          }  
+        }  
+
+        if (newUserAccount) {  
+          try {  
+            // Delete the auth account  
+            await user.delete(newUserAccount.$id);  
+          } catch (deleteError) {  
+            console.error('Error deleting auth account during rollback:', deleteError);  
+          }  
+        }  
+        throw error;   
+        
+      }
   } catch (error) {
       console.error('Error', error);
   }
@@ -360,28 +387,32 @@ export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps)
 
 export const createPrivateBankAccount = async ({
   privateBankId,
-  userId,
-  privateBankNumber,
+  bankName,
+  privateAccountNumber,
+  bankCardNumber,
   availableBalance,
   currentBalance,
   type,
-  shareableId
+  shareableId,
+  userId,
 }: createPrivateBankAccountProps) => {
   try {
     const { database } = await createAdminClient();
 
     const privateBankAccount = await database.createDocument(
       DATABASE_ID!,
-      BANK_COLLECTION_ID!,
+      PRIVATE_BANK_COLLECTION_ID!,
       ID.unique(),
       {
-        userId,
         privateBankId,
-        privateBankNumber,
+        bankName,
+        privateAccountNumber,
+        bankCardNumber,
         availableBalance,
         currentBalance,
         type,
         shareableId,
+        userId,
       }
     );
     return parseStringify(privateBankAccount);

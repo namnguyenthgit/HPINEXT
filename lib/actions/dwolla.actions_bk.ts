@@ -83,21 +83,11 @@ export const createTransfer = async ({
         value: amount,
       },
     };
-    // return await dwollaClient
-    //   .post("transfers", requestBody)
-    //   .then((res) => res.headers.get("location"));
-    const response = await dwollaClient.post("transfers", requestBody);  
-    const transferLocation = response.headers.get("location");  
-    
-    if (!transferLocation) {  
-      throw new Error("Transfer creation failed - no transfer location received");  
-    }  
-    
-    return transferLocation;
-  } catch (error: any) {
-    //console.error("Transfer fund failed: ", err);
-    const errorMessage = error.message || "Transfer creation failed";  
-    throw new Error(errorMessage); 
+    return await dwollaClient
+      .post("transfers", requestBody)
+      .then((res) => res.headers.get("location"));
+  } catch (err) {
+    console.error("Transfer fund failed: ", err);
   }
 };
 

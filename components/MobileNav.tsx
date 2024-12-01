@@ -49,10 +49,10 @@ const MobileNav = ({ user }: MobileNavProps) => {
               src="/icons/logo.svg"
               width={34}
               height={34}
-              alt="SureBucks logo"
+              alt="SurBucks logo"
             />
             <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
-              SureBucks
+              SurBucks
             </h1>
           </Link>
           <div className="mobilenav-sheet">

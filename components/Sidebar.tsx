@@ -21,7 +21,7 @@ const Sidebar = ({ user }: SiderbarProps) => {
             alt="Surbucks logo"
             className="size-[24px] max-xl:size-14"
           />
-          <h1 className="sidebar-logo">SureBucks</h1>
+          <h1 className="sidebar-logo">SurBucks</h1>
         </Link>
         {sidebarLinks.map((item) => {
           const isActive =

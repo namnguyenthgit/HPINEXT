@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { Inter, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -12,8 +13,8 @@ const ibmPlexSerif = IBM_Plex_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "SureBucks",
-  description: "SureBucks is a modern banking platform for everyone.",
+  title: "SurBucks",
+  description: "SurBucks is a modern banking platform for everyone.",
   icons: {
     icon: "/icons/logo.svg",
   },
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${inter.variable} ${ibmPlexSerif.variable} antialiased`}
       >
         {children}
+        <Toaster />
       </body>
     </html>
   );

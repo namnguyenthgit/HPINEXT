@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
@@ -25,7 +25,6 @@ import {
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { BankDropdown } from "./BankDropdown";
-import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -37,12 +36,7 @@ const formSchema = z.object({
 
 const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
   const router = useRouter();
-  const { toast } = useToast();  
-  const [isPending, startTransition] = useTransition();  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Combined loading state  
-  const isLoading = isPending || isSubmitting;
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,28 +50,14 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
   });
 
   const submit = async (data: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true);
+    setIsLoading(true);
 
     try {
-      // Show loading toast  
-      toast({  
-        title: "Processing transfer...",  
-        description: "Please wait while we process your transfer.",  
-      });
-
       const receiverAccountId = decryptId(data.sharableId);
       const receiverBank = await getBankByAccountId({
         accountId: receiverAccountId,
       });
       const senderBank = await getBank({ documentId: data.senderBank });
-      if (!receiverBank || !senderBank) {  
-        toast({  
-          variant: "destructive",  
-          title: "Error",  
-          description: "Invalid bank account information",  
-        });  
-        return;  
-      }
 
       const transferParams = {
         sourceFundingSourceUrl: senderBank.fundingSourceUrl,
@@ -86,14 +66,6 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
       };
       // create transfer
       const transfer = await createTransfer(transferParams);
-      if (!transfer) {  
-        toast({  
-          variant: "destructive",  
-          title: "Error",  
-          description: "Transfer creation failed",  
-        });  
-        return;  
-      }
 
       // create transfer transaction
       if (transfer) {
@@ -110,29 +82,15 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         const newTransaction = await createTransaction(transaction);
 
         if (newTransaction) {
-          toast({  
-            title: "Success",  
-            description: "Transfer completed successfully!",  
-          });
-
           form.reset();
-          startTransition(() => {  
-            router.push("/");  
-          });
+          router.push("/");
         }
       }
-    } catch (error: any) {
-      // Show error message  
-      toast({  
-        variant: "destructive",  
-        title: "Error",  
-        description: error.message || "Transfer failed. Please try again.",  
-      });  
-      console.error("Transfer failed:", error);
+    } catch (error) {
+      console.error("Submitting create transfer request failed: ", error);
     }
-    finally {  
-      setIsSubmitting(false);  
-    }
+
+    setIsLoading(false);
   };
 
   return (
@@ -279,13 +237,10 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         />
 
         <div className="payment-transfer_btn-box">
-          <Button type="submit" className="payment-transfer_btn" disabled={isLoading}>
+          <Button type="submit" className="payment-transfer_btn">
             {isLoading ? (
               <>
-                <div className="flex items-center gap-2">  
-                  <Loader2 size={20} className="animate-spin" />  
-                  <span>Processing...</span>  
-                </div>
+                <Loader2 size={20} className="animate-spin" /> &nbsp; Sending...
               </>
             ) : (
               "Transfer Funds"
