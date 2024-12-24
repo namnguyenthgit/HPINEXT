@@ -11,7 +11,7 @@ import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 import { error } from "console";
 import { appwriteConfig } from "../appwrite-config";
 
-interface SignInError {
+interface SignInUpError {
   code?: number;
   type?: string;
   message?: string;
@@ -20,6 +20,7 @@ interface SignInError {
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
 const BANK_COLLECTION_ID = appwriteConfig.bankCollectionId
+const PRIVATE_BANK_COLLECTION_ID = appwriteConfig.privateBankCollectionId
 
 // Get all users  
 export const getAllUsers = async () => {  
@@ -45,79 +46,33 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
       USER_COLLECTION_ID!,
       [Query.equal('userId',[userId])]
     )
-    if (!user) throw error;
+    //console.log('useraction-getUserInfo user:',user);
+    if (!user || user.documents.length === 0) {  
+      return {  
+        code: 404,  
+        type: 'user_not_found',  
+        message: 'User data not found'  
+      };  
+    }  
     return parseStringify(user.documents[0]);
   } catch (error) {
-    console.error("An error occur while getBanks:", error);
-    return null;
+    console.error("An error occur while getUserInfo:", error);
+    return {  
+      code: 500,  
+      type: 'database_error',  
+      message: 'Failed to fetch user information'  
+    };
   }
 }
 
 export const signIn = async ({ email, password }: signInProps) => {
-    try {
-        //Mutation/ Database / Make fetch
-        const { account } = await createAdminClient();
-        const session = await account.createEmailPasswordSession(email, password);
-
-        //console.log('useraction-signin response:',response);
-        // Use cookies() with await
-        const cookieStore = await cookies();
-        cookieStore.set("appwrite-session", session.secret, {
-          path: "/",
-          httpOnly: true,
-          sameSite: "strict",
-          secure: true,
-        });
-        const user = await getUserInfo({ userId: session.userId})
-        return parseStringify(user);
-    } catch (error: unknown) {
-      const typedError = error as SignInError; // Cast to known type
-      console.error('Error:', typedError);
-
-      const errorMessage =
-        typedError?.message || typedError?.type || 'An unexpected error occurred.';
-
-      return {
-        code: typedError?.code || 500,
-        type: typedError?.type || 'unknown_error',
-        message: errorMessage,
-      };
-    }
-}
-
-export const signUp = async ({password, ...userData} : SignUpParams) => {
-  const { email, firstName, lastName } = userData;
-  let newUserAccount;
   try {
-      // Create a user account
-      
-      const { account, database } = await createAdminClient();
-
-      newUserAccount = await account.create(ID.unique(), email, password, `${firstName} ${lastName}`);
-      if(!newUserAccount) throw new Error('Error creating user')
-
-      // create dwolla customer
-      const dwollaCustomerUrl = await createDwollaCustomer({
-        ...userData,
-        type: "personal",
-      });
-      if (!dwollaCustomerUrl) throw new Error("Error creating dwolla customer");
-
-      const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
-      const newUser = await database.createDocument(
-        DATABASE_ID!,
-        USER_COLLECTION_ID!,
-        ID.unique(),
-        {
-          ...userData,
-          userId: newUserAccount.$id,
-          dwollaCustomerId,
-          dwollaCustomerUrl,          
-        }
-      );
-
+      //Mutation/ Database / Make fetch
+      const { account } = await createAdminClient();
       const session = await account.createEmailPasswordSession(email, password);
-      
+
+      //console.log('useraction-signin response:',session);
+      // Use cookies() with await
       const cookieStore = await cookies();
       cookieStore.set("appwrite-session", session.secret, {
         path: "/",
@@ -125,15 +80,144 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
         sameSite: "strict",
         secure: true,
       });
+      //console.log('useraction-signin session.userId:',session.userId);
+      const user = await getUserInfo({ userId: session.userId})
+      //console.log('useraction-signin user:',user);
+      
+      // Check if user is an error response  
+      if ('code' in user && 'type' in user) {  
+        return user; // Return the error object  
+      }
 
-      //return parseStringify(newUserAccount);
-      return parseStringify(newUser);
+      return parseStringify(user);
+  } catch (error: unknown) {
+    const typedError = error as SignInUpError; // Cast to known type
+    console.error('Error:', typedError);
 
-  } catch (error) {
-      console.error('Error', error);
+    const errorMessage =
+      typedError?.message || typedError?.type || 'An unexpected error occurred.';
+
+    return {
+      code: typedError?.code || 500,
+      type: typedError?.type || 'unknown_error',
+      message: errorMessage,
+    };
   }
 }
 
+export const signUp = async ({password, ...userData} : SignUpParams) => {
+  const { email, firstName, lastName } = userData;
+  let newUserAccount;
+  let newUser;
+  let dwollaCustomerUrl;
+  try {
+      // Create a user account
+      
+      const { account, database, user } = await createAdminClient();
+      // Step 1: Create Appwrite account   
+      try {  
+        newUserAccount = await account.create(  
+          ID.unique(),   
+          email,   
+          password,   
+          `${firstName} ${lastName}`  
+        );  
+        
+        if (!newUserAccount) {  
+          return {  
+            code: 400,  
+            type: 'account_creation_failed',  
+            message: 'Failed to create user account'  
+          };
+        }  
+      } catch (error: unknown) {
+        const typedError = error as SignInUpError; // Cast to known type
+        return {  
+          code: 400,  
+          type: 'account_creation_failed',  
+          message: typedError?.message || 'Failed to create user account'  
+        };  
+      }
+      
+      // Step 2: Create Dwolla customer
+      try {
+        dwollaCustomerUrl = await createDwollaCustomer({
+          ...userData,
+          type: "personal",
+        });
+        if (!dwollaCustomerUrl) {  
+          // Cleanup Appwrite account if Dwolla creation fails  
+          await user.delete(newUserAccount.$id);  
+          return {  
+            code: 400,  
+            type: 'dwolla_creation_failed',  
+            message: 'Failed to create Dwolla customer'  
+          };  
+        }
+
+        const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
+        newUser = await database.createDocument(
+          DATABASE_ID!,
+          USER_COLLECTION_ID!,
+          ID.unique(),
+          {
+            ...userData,
+            userId: newUserAccount.$id,
+            dwollaCustomerId,
+            dwollaCustomerUrl,          
+          }
+        );
+
+        const session = await account.createEmailPasswordSession(email, password);
+        
+        const cookieStore = await cookies();
+        cookieStore.set("appwrite-session", session.secret, {
+          path: "/",
+          httpOnly: true,
+          sameSite: "strict",
+          secure: true,
+        });
+
+        //return parseStringify(newUserAccount);
+        return parseStringify(newUser);
+      } catch (error : unknown) {
+        const typedError = error as SignInUpError; // Cast to known type
+        if (newUser) {  
+          try {  
+            await database.deleteDocument(  
+              DATABASE_ID!,  
+              USER_COLLECTION_ID!,  
+              newUser.$id  
+            );  
+          } catch (deleteError) {  
+            console.error('Error deleting user document during rollback:', deleteError);  
+          }  
+        }  
+      
+        if (newUserAccount) {  
+          try {  
+            await user.delete(newUserAccount.$id);  
+          } catch (deleteError) {  
+            console.error('Error deleting auth account during rollback:', deleteError);  
+          }  
+        }  
+
+        return {  
+          code: 500,  
+          type: 'registration_failed',  
+          message: typedError?.message || 'Failed to complete registration process'  
+        }; 
+      }
+  } catch (error: unknown) {
+    console.error('Error during signup:', error);  
+    return {  
+      code: 500,  
+      type: 'unexpected_error',  
+      message: 'An unexpected error occurred during signup'  
+    };  
+  }
+}
+  
 export async function getLoggedInUser() {
   try {
     // Get session from cookies
@@ -151,6 +235,10 @@ export async function getLoggedInUser() {
     try {
       const result = await account.get(); // Make sure the session has the correct scope
       const user = await getUserInfo({ userId: result.$id})
+      if (!result || !result.$id) {  
+        console.log("No valid account found");  
+        return null;  
+      }
       return parseStringify(user);
     } catch (accountError) {
       console.error("Error fetching user:", accountError);
@@ -356,3 +444,54 @@ export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps)
     console.error("An error occur while getBanks:", error);
   }
 } 
+
+export const createPrivateBankAccount = async ({
+  privateBankId,
+  bankName,
+  privateAccountNumber,
+  bankCardNumber,
+  availableBalance,
+  currentBalance,
+  type,
+  shareableId,
+  userId,
+}: createPrivateBankAccountProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const privateBankAccount = await database.createDocument(
+      DATABASE_ID!,
+      PRIVATE_BANK_COLLECTION_ID!,
+      ID.unique(),
+      {
+        privateBankId,
+        bankName,
+        privateAccountNumber,
+        bankCardNumber,
+        availableBalance,
+        currentBalance,
+        type,
+        shareableId,
+        userId,
+      }
+    );
+    return parseStringify(privateBankAccount);
+  } catch (error) {
+    console.log('create Private Bank Error:',error)
+  }
+}
+
+export const getPrivateBanks = async ({ userId }: getBanksProps) => {
+  try {
+    const { database } = await createAdminClient();
+    const privateBanks = await database.listDocuments(
+      DATABASE_ID!,
+      PRIVATE_BANK_COLLECTION_ID!,
+      [Query.equal('userId',[userId])]
+    )
+    if (!privateBanks) throw error;
+    return parseStringify(privateBanks.documents);
+  } catch (error) {
+    console.error("An error occur while getBanks:", error);
+  }
+}

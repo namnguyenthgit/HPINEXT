@@ -1,4 +1,4 @@
-export const sidebarLinks = [
+export const sidebarLinksbk = [
   {
     imgURL: "/icons/home.svg",
     route: "/",
@@ -13,6 +13,24 @@ export const sidebarLinks = [
     imgURL: "/icons/bank.svg",
     route: "/add-bank",
     label: "Add Bank",
+  },
+  {
+    imgURL: "/icons/transaction.svg",
+    route: "/transaction-history",
+    label: "Transaction History",
+  },
+  {
+    imgURL: "/icons/money-send.svg",
+    route: "/payment-transfer",
+    label: "Transfer Funds",
+  },
+];
+
+export const sidebarLinks = [
+  {
+    imgURL: "/icons/home.svg",
+    route: "/",
+    label: "Home",
   },
   {
     imgURL: "/icons/transaction.svg",

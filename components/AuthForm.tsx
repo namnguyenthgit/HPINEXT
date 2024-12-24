@@ -14,13 +14,14 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn, signUp } from "@/lib/actions/user.actions";
 import PlaidLink from "./PlaidLink";
+import { appConfig } from "@/lib/appconfig";
 
 const AuthForm = ({ type }: { type: string }) => {
+  const apptitle = appConfig.title;
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const formSchema = authFormSchema(type);
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -110,14 +111,9 @@ const AuthForm = ({ type }: { type: string }) => {
     <section className="auth-form">
       <header className="flex flex-col gap-5 md:gap-8">
         <Link href="/" className="cursor-pointer flex items-center gap-1">
-          <Image
-            src="/icons/logo.svg"
-            width={34}
-            height={34}
-            alt="SurBucks logo"
-          />
+          <Image src="/icons/logo.svg" width={34} height={34} alt="app logo" />
           <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
-            SurBucks
+            {apptitle}
           </h1>
         </Link>
         <div className="flex flex-col gap-1 md:gap-3">

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Inter, IBM_Plex_Serif } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { appConfig } from "@/lib/appconfig";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -13,10 +14,10 @@ const ibmPlexSerif = IBM_Plex_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "SurBucks",
-  description: "SurBucks is a modern banking platform for everyone.",
+  title: appConfig.title,
+  description: appConfig.description,
   icons: {
-    icon: "/icons/logo.svg",
+    icon: appConfig.icon,
   },
 };
 

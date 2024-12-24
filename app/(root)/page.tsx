@@ -55,12 +55,6 @@ const Home = async (props: SearchParamProps) => {
             user={loggedIn?.firstName || "Guest"}
             subtext="Access and manage your account and transactions efficiantly."
           />
-
-          <TotalBalanceBox
-            accounts={accountsData}
-            totalBanks={accounts?.totalBanks}
-            totalCurrentBalance={accounts?.totalCurrentBalance}
-          />
         </header>
         <RecentTransactions
           accounts={accountsData}

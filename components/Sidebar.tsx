@@ -7,9 +7,11 @@ import { usePathname } from "next/navigation";
 import React from "react";
 import Footer from "./Footer";
 import PlaidLink from "./PlaidLink";
+import { appConfig } from "@/lib/appconfig";
 
 const Sidebar = ({ user }: SiderbarProps) => {
   const pathname = usePathname();
+  const apptitle = appConfig.title;
   return (
     <section className="sidebar">
       <nav className="flex flex-col gap-4">
@@ -18,10 +20,10 @@ const Sidebar = ({ user }: SiderbarProps) => {
             src="/icons/logo.svg"
             width={34}
             height={34}
-            alt="Surbucks logo"
+            alt="app logo"
             className="size-[24px] max-xl:size-14"
           />
-          <h1 className="sidebar-logo">SurBucks</h1>
+          <h1 className="sidebar-logo">{apptitle}</h1>
         </Link>
         {sidebarLinks.map((item) => {
           const isActive =
@@ -50,7 +52,6 @@ const Sidebar = ({ user }: SiderbarProps) => {
             </Link>
           );
         })}
-        <PlaidLink user={user} />
       </nav>
       <Footer user={user} />
     </section>

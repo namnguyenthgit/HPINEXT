@@ -16,10 +16,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Footer from "./Footer";
+import { appConfig } from "@/lib/appconfig";
 
 const MobileNav = ({ user }: MobileNavProps) => {
   const pathname = usePathname();
-
+  const apptitle = appConfig.title;
   return (
     <section className="w-fulll max-w-[264px]">
       <Sheet>
@@ -34,13 +35,11 @@ const MobileNav = ({ user }: MobileNavProps) => {
         </SheetTrigger>
         <SheetContent side="left" className="border-none bg-white">
           <VisuallyHidden>
-            <SheetTitle>
-              Menu
-            </SheetTitle>
+            <SheetTitle>Menu</SheetTitle>
             <SheetDescription>
               Navigation menu for the mobile app.
             </SheetDescription>
-          </VisuallyHidden>          
+          </VisuallyHidden>
           <Link
             href="/"
             className="cursor-pointer flex items-center gap-1 px-4"
@@ -49,10 +48,10 @@ const MobileNav = ({ user }: MobileNavProps) => {
               src="/icons/logo.svg"
               width={34}
               height={34}
-              alt="SurBucks logo"
+              alt="app logo"
             />
             <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
-              SurBucks
+              {apptitle}
             </h1>
           </Link>
           <div className="mobilenav-sheet">
@@ -95,7 +94,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
                 USER
               </nav>
             </SheetClose>
-            <Footer user={user} type='mobile'/>
+            <Footer user={user} type="mobile" />
           </div>
         </SheetContent>
       </Sheet>
