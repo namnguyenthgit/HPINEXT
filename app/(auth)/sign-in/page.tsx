@@ -5,10 +5,22 @@ import { redirect } from "next/navigation";
 const SignIn = async () => {
   // Check if the user is logged in
   const loggedIn = await getLoggedInUser();
+  console.log("Logged in user data:", loggedIn);
 
-   // If user is logged in, redirect to the home page (or dashboard, etc.)
-   if (loggedIn) {
-    redirect("/"); // Redirect to home or dashboard page
+  // Check if loggedIn is an error response (has code property)
+  if (loggedIn && "code" in loggedIn) {
+    console.log("Error response received:", loggedIn);
+    return (
+      <section className="flex-center size-full max-sm:px-6">
+        <AuthForm type="sign-in" />
+      </section>
+    );
+  }
+
+  // Only redirect if we have a valid user object with required properties
+  if (loggedIn && loggedIn.$id) {
+    console.log("Valid user found, redirecting...");
+    redirect("/");
   }
 
   return (

@@ -19,7 +19,7 @@ const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const formSchema = authFormSchema(type);
   // 1. Define your form.
@@ -50,6 +50,7 @@ const AuthForm = ({ type }: { type: string }) => {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     setIsLoading(true);
+    setError(null); // Clear any previous errors
     try {
       //sign up with Appwrite & create plain link token
       if (type === "sign-up") {
@@ -65,8 +66,15 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         };
-        const newUser = await signUp(userData);
-        setUser(newUser);
+        const response = await signUp(userData);
+
+        // Check if the response is an error
+        if (response && "code" in response) {
+          setError(response.message || "Failed to create account");
+          return;
+        } else {
+          setUser(response);
+        }
       }
 
       if (type === "sign-in") {
@@ -74,19 +82,22 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         });
-        //console.log('AuthForm-submit response:',response);
-        // Check if the response contains 'code' (which would indicate an error)
-        if (response && "code" in response) {
-          const errorMessage =
-            response?.message ||
-            response?.type ||
-            "An unexpected error occurred.";
-          setError(errorMessage);
-        } else {
-          // Successful response, which doesn't have a 'code'
-          setError(null); // Clear any previous error on successful login
-          router.push("/"); // Redirect to the home page or another page on success
+        console.log("AuthForm-onSubmit-SignIn response:", response);
+        // Early return if response is undefined or null
+        if (!response) {
+          setError("No response from server");
+          return;
         }
+
+        // Handle error response
+        if ("code" in response) {
+          setError(response.message || "Invalid credentials");
+          return;
+        }
+
+        // Only execute these if there was no error
+        setError(null);
+        router.push("/");
       }
     } catch (error) {
       console.log(error);

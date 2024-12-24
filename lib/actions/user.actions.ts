@@ -11,7 +11,7 @@ import { addFundingSource, createDwollaCustomer } from "./dwolla.actions";
 import { error } from "console";
 import { appwriteConfig } from "../appwrite-config";
 
-interface SignInError {
+interface SignInUpError {
   code?: number;
   type?: string;
   message?: string;
@@ -46,44 +46,63 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
       USER_COLLECTION_ID!,
       [Query.equal('userId',[userId])]
     )
-    if (!user) throw error;
+    //console.log('useraction-getUserInfo user:',user);
+    if (!user || user.documents.length === 0) {  
+      return {  
+        code: 404,  
+        type: 'user_not_found',  
+        message: 'User data not found'  
+      };  
+    }  
     return parseStringify(user.documents[0]);
   } catch (error) {
-    console.error("An error occur while getBanks:", error);
-    return null;
+    console.error("An error occur while getUserInfo:", error);
+    return {  
+      code: 500,  
+      type: 'database_error',  
+      message: 'Failed to fetch user information'  
+    };
   }
 }
 
 export const signIn = async ({ email, password }: signInProps) => {
-    try {
-        //Mutation/ Database / Make fetch
-        const { account } = await createAdminClient();
-        const session = await account.createEmailPasswordSession(email, password);
+  try {
+      //Mutation/ Database / Make fetch
+      const { account } = await createAdminClient();
+      const session = await account.createEmailPasswordSession(email, password);
 
-        //console.log('useraction-signin response:',response);
-        // Use cookies() with await
-        const cookieStore = await cookies();
-        cookieStore.set("appwrite-session", session.secret, {
-          path: "/",
-          httpOnly: true,
-          sameSite: "strict",
-          secure: true,
-        });
-        const user = await getUserInfo({ userId: session.userId})
-        return parseStringify(user);
-    } catch (error: unknown) {
-      const typedError = error as SignInError; // Cast to known type
-      console.error('Error:', typedError);
+      //console.log('useraction-signin response:',session);
+      // Use cookies() with await
+      const cookieStore = await cookies();
+      cookieStore.set("appwrite-session", session.secret, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "strict",
+        secure: true,
+      });
+      //console.log('useraction-signin session.userId:',session.userId);
+      const user = await getUserInfo({ userId: session.userId})
+      //console.log('useraction-signin user:',user);
+      
+      // Check if user is an error response  
+      if ('code' in user && 'type' in user) {  
+        return user; // Return the error object  
+      }
 
-      const errorMessage =
-        typedError?.message || typedError?.type || 'An unexpected error occurred.';
+      return parseStringify(user);
+  } catch (error: unknown) {
+    const typedError = error as SignInUpError; // Cast to known type
+    console.error('Error:', typedError);
 
-      return {
-        code: typedError?.code || 500,
-        type: typedError?.type || 'unknown_error',
-        message: errorMessage,
-      };
-    }
+    const errorMessage =
+      typedError?.message || typedError?.type || 'An unexpected error occurred.';
+
+    return {
+      code: typedError?.code || 500,
+      type: typedError?.type || 'unknown_error',
+      message: errorMessage,
+    };
+  }
 }
 
 export const signUp = async ({password, ...userData} : SignUpParams) => {
@@ -95,9 +114,30 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
       // Create a user account
       
       const { account, database, user } = await createAdminClient();
-      // Step 1: Create Appwrite account 
-      newUserAccount = await account.create(ID.unique(), email, password, `${firstName} ${lastName}`);
-      if(!newUserAccount) throw new Error('Error creating user')
+      // Step 1: Create Appwrite account   
+      try {  
+        newUserAccount = await account.create(  
+          ID.unique(),   
+          email,   
+          password,   
+          `${firstName} ${lastName}`  
+        );  
+        
+        if (!newUserAccount) {  
+          return {  
+            code: 400,  
+            type: 'account_creation_failed',  
+            message: 'Failed to create user account'  
+          };
+        }  
+      } catch (error: unknown) {
+        const typedError = error as SignInUpError; // Cast to known type
+        return {  
+          code: 400,  
+          type: 'account_creation_failed',  
+          message: typedError?.message || 'Failed to create user account'  
+        };  
+      }
       
       // Step 2: Create Dwolla customer
       try {
@@ -105,7 +145,16 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
           ...userData,
           type: "personal",
         });
-        if (!dwollaCustomerUrl) throw new Error("Error creating dwolla customer");
+        if (!dwollaCustomerUrl) {  
+          // Cleanup Appwrite account if Dwolla creation fails  
+          await user.delete(newUserAccount.$id);  
+          return {  
+            code: 400,  
+            type: 'dwolla_creation_failed',  
+            message: 'Failed to create Dwolla customer'  
+          };  
+        }
+
         const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
         newUser = await database.createDocument(
           DATABASE_ID!,
@@ -131,11 +180,10 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
 
         //return parseStringify(newUserAccount);
         return parseStringify(newUser);
-      } catch (error) {
-        // Cleanup if anything fails after initial account creation  
+      } catch (error : unknown) {
+        const typedError = error as SignInUpError; // Cast to known type
         if (newUser) {  
           try {  
-            // Delete the user document from collection  
             await database.deleteDocument(  
               DATABASE_ID!,  
               USER_COLLECTION_ID!,  
@@ -145,23 +193,31 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
             console.error('Error deleting user document during rollback:', deleteError);  
           }  
         }  
-
+      
         if (newUserAccount) {  
           try {  
-            // Delete the auth account  
             await user.delete(newUserAccount.$id);  
           } catch (deleteError) {  
             console.error('Error deleting auth account during rollback:', deleteError);  
           }  
         }  
-        throw error;   
-        
+
+        return {  
+          code: 500,  
+          type: 'registration_failed',  
+          message: typedError?.message || 'Failed to complete registration process'  
+        }; 
       }
-  } catch (error) {
-      console.error('Error', error);
+  } catch (error: unknown) {
+    console.error('Error during signup:', error);  
+    return {  
+      code: 500,  
+      type: 'unexpected_error',  
+      message: 'An unexpected error occurred during signup'  
+    };  
   }
 }
-
+  
 export async function getLoggedInUser() {
   try {
     // Get session from cookies
@@ -179,6 +235,10 @@ export async function getLoggedInUser() {
     try {
       const result = await account.get(); // Make sure the session has the correct scope
       const user = await getUserInfo({ userId: result.$id})
+      if (!result || !result.$id) {  
+        console.log("No valid account found");  
+        return null;  
+      }
       return parseStringify(user);
     } catch (accountError) {
       console.error("Error fetching user:", accountError);

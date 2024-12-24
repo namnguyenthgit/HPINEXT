@@ -17,6 +17,7 @@ const Home = async (props: SearchParamProps) => {
 
   // Add null check here
   if (!loggedIn) {
+    console.log("User not logged in, redirecting to sign-in");
     redirect("/sign-in");
     // return null;
   }
@@ -25,7 +26,10 @@ const Home = async (props: SearchParamProps) => {
     userId: loggedIn.$id,
   });
 
-  if (!accounts) return null;
+  if (!accounts) {
+    console.log("No accounts found");
+    return null;
+  }
 
   const accountsData = accounts?.data;
 
