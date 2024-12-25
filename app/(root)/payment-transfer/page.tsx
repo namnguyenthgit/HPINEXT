@@ -1,5 +1,6 @@
 import HeaderBox from "@/components/HeaderBox";
 import PaymentTransferForm from "@/components/PaymentTransferForm";
+import PayPortalTransferForm from "@/components/PayPortalTransferForm";
 import { getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import React from "react";
@@ -9,12 +10,12 @@ const Transfer = async () => {
   const loggedIn = await getLoggedInUser();
   //console.log('root-page loggedIn:',loggedIn);
 
-  const accounts = await getAccounts({
-    userId: loggedIn.$id,
-  });
+  // const accounts = await getAccounts({
+  //   userId: loggedIn.$id,
+  // });
 
-  if (!accounts) return null;
-  const accountsData = accounts?.data;
+  //if (!accounts) return null;
+  //const accountsData = accounts?.data;
 
   return (
     <section className="payment-transfer">
@@ -24,7 +25,8 @@ const Transfer = async () => {
       />
 
       <section className="size-full pt-5">
-        <PaymentTransferForm accounts={accountsData} />
+        <PayPortalTransferForm />
+        {/* <PaymentTransferForm accounts={accountsData} /> */}
       </section>
     </section>
   );

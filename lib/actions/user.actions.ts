@@ -35,21 +35,35 @@ export const getAllUsers = async () => {
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
-    const { database } = await createAdminClient();
-    const user = await database.listDocuments(
+    const { account, database, user } = await createAdminClient();
+    const userData = await database.listDocuments(
       DATABASE_ID!,
       USER_COLLECTION_ID!,
       [Query.equal('userId',[userId])]
     )
+
+    // First get user verification status  
+    const userAccount = await user.get(userId);
+
     //console.log('useraction-getUserInfo user:',user);
-    if (!user || user.documents.length === 0) {  
+    if (!userData || userData.documents.length === 0) {  
       return {  
         code: 404,  
         type: 'user_not_found',  
         message: 'User data not found'  
       };  
-    }  
-    return parseStringify(user.documents[0]);
+    }
+
+    // If email is not verified, return verification error
+    //console.log('getUserInfo userAccount:',userAccount);
+    if (!userAccount.emailVerification) {  
+      return {  
+        code: 401,  
+        type: 'email_not_verified',  
+        message: 'Please contact IT verify your account!'  
+      };  
+    }
+    return parseStringify(userData.documents[0]);
   } catch (error) {
     console.error("An error occur while getUserInfo:", error);
     return {  
@@ -65,8 +79,8 @@ export const signIn = async ({ email, password }: signInProps) => {
       //Mutation/ Database / Make fetch
       const { account } = await createAdminClient();
       const session = await account.createEmailPasswordSession(email, password);
-
       //console.log('useraction-signin response:',session);
+
       // Use cookies() with await
       const cookieStore = await cookies();
       cookieStore.set("appwrite-session", session.secret, {

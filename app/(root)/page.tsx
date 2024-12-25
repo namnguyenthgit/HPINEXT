@@ -3,6 +3,7 @@ import RecentTransactions from "@/components/RecentTransactions";
 import RightSidebar from "@/components/RightSidebar";
 import TotalBalanceBox from "@/components/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
+import { getTransactionsEmail } from "@/lib/actions/transaction.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -22,8 +23,8 @@ const Home = async (props: SearchParamProps) => {
     // return null;
   }
 
-  const accounts = await getAccounts({
-    userId: loggedIn.$id,
+  const accounts = await getTransactionsEmail({
+    email: loggedIn.$email,
   });
 
   if (!accounts) {
@@ -55,6 +56,12 @@ const Home = async (props: SearchParamProps) => {
             user={loggedIn?.firstName || "Guest"}
             subtext="Access and manage your account and transactions efficiantly."
           />
+
+          {/* <TotalBalanceBox
+            accounts={accountsData}
+            totalBanks={accounts?.totalBanks}
+            totalCurrentBalance={accounts?.totalCurrentBalance}
+          /> */}
         </header>
         <RecentTransactions
           accounts={accountsData}
@@ -63,11 +70,11 @@ const Home = async (props: SearchParamProps) => {
           page={currentPage}
         />
       </div>
-      <RightSidebar
+      {/* <RightSidebar
         user={loggedIn}
         transactions={account?.transactions}
         banks={accountsData?.slice(0, 2)}
-      />
+      /> */}
     </section>
   );
 };

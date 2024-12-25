@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 const SignIn = async () => {
   // Check if the user is logged in
   const loggedIn = await getLoggedInUser();
-  console.log("Logged in user data:", loggedIn);
+  //console.log("Logged in user data:", loggedIn);
 
   // Check if loggedIn is an error response (has code property)
   if (loggedIn && "code" in loggedIn) {
-    console.log("Error response received:", loggedIn);
+    console.log("SignIn Page get LoggedIn error:", loggedIn);
     return (
       <section className="flex-center size-full max-sm:px-6">
         <AuthForm type="sign-in" />

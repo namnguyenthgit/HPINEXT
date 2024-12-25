@@ -8,16 +8,10 @@ declare type SearchParamProps = {
 // ========================================
 
 declare type SignUpParams = {
-  firstName: string;
-  lastName: string;
-  address1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  dateOfBirth: string;
-  ssn: string;
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
 };
 
 declare type LoginUser = {
@@ -29,24 +23,9 @@ declare type User = {
   $id: string;
   email: string;
   userId: string;
-  dwollaCustomerUrl: string;
-  dwollaCustomerId: string;
   firstName: string;
   lastName: string;
   name: string;
-  address1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  dateOfBirth: string;
-  ssn: string;
-};
-
-declare type NewUserParams = {
-  userId: string;
-  email: string;
-  name: string;
-  password: string;
 };
 
 declare type Account = {
@@ -307,20 +286,62 @@ declare interface CreateFundingSourceOptions {
   _links: object; // Dwolla On Demand Authorization Link
 }
 
+declare type PayPortal = 'Zalopay' | 'OCB pay' | 'Galaxy Pay';  
+
+interface ZaloPayRequest {  
+  app_id: number; // Changed to number  
+  app_trans_id: string;  
+  app_user: string;  
+  app_time: number;  
+  amount: number;  
+  item: string;  
+  description: string;  
+  embed_data: string;  
+  bank_code: string;  
+  expire_duration_seconds: number; // Added this field  
+  mac: string;  
+}  
+
+interface ZaloPayResponse {  
+  return_code: number;  
+  return_message: string;  
+  sub_return_code: number;  
+  sub_return_message: string;  
+  order_url?: string;  
+  order_token?: string;  
+  zp_trans_token?: string;  
+  qr_code?: string;  
+}
+
+declare interface PaymentRequest {  
+  payPortalName: PayPortal;  
+  lsDocumentNo: string;  
+  amount: string;  
+}  
+
+declare interface ZaloPayResponse {  
+  return_code: number;  
+  return_message: string;  
+  sub_return_code: number;  
+  sub_return_message: string;  
+  order_url: string;  
+  qr_code: string;  
+}  
+
 declare interface CreateTransactionProps {
-  name: string;
-  amount: string;
-  senderId: string;
-  senderBankId: string;
-  receiverId: string;
-  receiverBankId: string;
   email: string;
+  payPortalName: string;
+  amount: string;
+  lsDocumentNo: string;
 }
 
 declare interface getTransactionsByBankIdProps {
   bankId: string;
 }
 
+declare interface getTransactionsByEmailProps {
+  email: string;
+}
 declare interface signInProps {
   email: string;
   password: string;
