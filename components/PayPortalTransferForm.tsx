@@ -33,6 +33,7 @@ const formSchema = z.object({
 });
 
 const PAY_PORTALS = [
+  { name: "VNPay", value: "VNPay" },
   { name: "Zalopay", value: "Zalopay" },
   { name: "OCB pay", value: "OCB pay" },
   { name: "Galaxy Pay", value: "Galaxy Pay" },
@@ -138,14 +139,16 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {PAY_PORTALS.map((portal) => (
-                    <SelectItem key={portal.value} value={portal.value}>
-                      {portal.name}
-                    </SelectItem>
-                  ))}
+                  <div className="bg-white">
+                    {PAY_PORTALS.map((portal) => (
+                      <SelectItem key={portal.value} value={portal.value}>
+                        {portal.name}
+                      </SelectItem>
+                    ))}
+                  </div>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
@@ -167,14 +170,16 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {DOCUMENT_NUMBERS.map((docNo) => (
-                    <SelectItem key={docNo} value={docNo}>
-                      {docNo}
-                    </SelectItem>
-                  ))}
+                  <div className="bg-white">
+                    {DOCUMENT_NUMBERS.map((docNo) => (
+                      <SelectItem key={docNo} value={docNo}>
+                        {docNo}
+                      </SelectItem>
+                    ))}
+                  </div>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
@@ -193,7 +198,7 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-red-500" />
             </FormItem>
           )}
         />
@@ -235,14 +240,18 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
           </div>
         )} */}
 
-        <Button type="submit" disabled={isLoading} className="w-full">
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="payment-transfer_btn"
+        >
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating Payment...
+              Generating QR Payment...
             </>
           ) : (
-            "Generate Payment"
+            "Generate QR Payment"
           )}
         </Button>
       </form>

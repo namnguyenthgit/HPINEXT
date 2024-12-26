@@ -8,7 +8,7 @@ import React from "react";
 const Transfer = async () => {
   //const loggedIn = {name: "uN70v3 Fusion", email: "uN70v3@gmail.com",};
   const loggedIn = await getLoggedInUser();
-  //console.log('root-page loggedIn:',loggedIn);
+  //console.log("payment-transfer-page loggedIn:", loggedIn);
 
   // const accounts = await getAccounts({
   //   userId: loggedIn.$id,
@@ -20,13 +20,13 @@ const Transfer = async () => {
   return (
     <section className="payment-transfer">
       <HeaderBox
-        title="Payment Transfer"
-        subtext="Please provide any specific details or notes related to the payment transfer"
+        title="Pay Portals"
+        subtext="Please provide any specific details or notes related to the payment portals"
       />
 
       <section className="size-full pt-5">
-        <PayPortalTransferForm />
         {/* <PaymentTransferForm accounts={accountsData} /> */}
+        <PayPortalTransferForm email={loggedIn.email} />
       </section>
     </section>
   );

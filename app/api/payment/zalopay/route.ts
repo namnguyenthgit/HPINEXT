@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 
 const config = {  
   app_id: 4068,  
-  key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
+  key1: "81Zbv2d38uBNpk5YvrnKgKnZsMrhk5yb",
   endpoint: "https://sb-openapi.zalopay.vn/v2/create"  
 };  
 
@@ -22,7 +22,7 @@ function getCurrentTimeString(format: string): string {
 } 
 
 function hmacEncrypt(key: string, data: string): string { 
-  return CryptoJS.HmacSHA256(data, key).toString(CryptoJS.enc.Hex);
+  return CryptoJS.HmacSHA256(data,key).toString();
 }  
 
 export async function POST(req: NextRequest) {  
