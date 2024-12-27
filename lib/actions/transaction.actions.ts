@@ -28,7 +28,7 @@ export const createTransaction = async (transaction: CreateTransactionProps) => 
   }
 }
 
-export const getTransactionsEmail = async ({email}: getTransactionsByEmailProps) => {
+export const getTransactionsByEmail = async ({email}: getTransactionsByEmailProps) => {
   try {
     const { database } = await createAdminClient();
 
@@ -55,5 +55,21 @@ export const getTransactionsEmail = async ({email}: getTransactionsByEmailProps)
     return parseStringify(transactions);
   } catch (error) {
     console.log(error);
+  }
+}
+
+export const getTransactionsByDocNo = async ({lsDocumentNo}: getTransactionsByDocNoProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const transactions = await database.listDocuments(
+      DATABASE_ID!,
+      TRANSACTION_COLLECTION_ID!,
+      [Query.equal('lsDocumentNo', lsDocumentNo)],
+    )
+    return parseStringify(transactions.documents[0]);
+  } catch (error) {
+    console.log(error);
+    return null;
   }
 }

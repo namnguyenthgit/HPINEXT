@@ -333,6 +333,7 @@ declare interface CreateTransactionProps {
   payPortalName: string;
   amount: string;
   lsDocumentNo: string;
+  time_request: string;
 }
 
 declare interface getTransactionsByBankIdProps {
@@ -341,6 +342,10 @@ declare interface getTransactionsByBankIdProps {
 
 declare interface getTransactionsByEmailProps {
   email: string;
+}
+
+declare interface getTransactionsByDocNoProps {
+  lsDocumentNo: string;
 }
 declare interface signInProps {
   email: string;

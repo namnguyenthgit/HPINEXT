@@ -5,7 +5,6 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import Image from "next/image";
 import { Loader2 } from "lucide-react";
 
 import {
@@ -24,7 +23,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { createTransaction } from "@/lib/actions/transaction.actions";
 
 const formSchema = z.object({
   payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
@@ -33,10 +31,10 @@ const formSchema = z.object({
 });
 
 const PAY_PORTALS = [
-  { name: "VNPay", value: "VNPay" },
+  // { name: "VNPay", value: "VNPay" },
   { name: "Zalopay", value: "Zalopay" },
-  { name: "OCB pay", value: "OCB pay" },
-  { name: "Galaxy Pay", value: "Galaxy Pay" },
+  // { name: "OCB pay", value: "OCB pay" },
+  // { name: "Galaxy Pay", value: "Galaxy Pay" },
 ];
 
 // Mock document numbers - replace with actual data
@@ -52,7 +50,10 @@ interface PayPortalTransferFormProps {
 
 const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<{
+    type: "success" | "error" | null;
+    message: string | null;
+  }>({ type: null, message: null });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,58 +63,50 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
       amount: "",
     },
   });
-
-  const generateZaloPayRequest = async (data: z.infer<typeof formSchema>) => {
-    const response = await fetch("/api/payment/zalopay", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        lsDocumentNo: data.lsDocumentNo,
-        amount: data.amount,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || "Payment request failed");
-    }
-
-    if (result.return_code !== 1) {
-      throw new Error(result.return_message || "Payment generation failed");
-    }
-
-    return result.order_url;
-  };
-
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
-      setError(null);
+      setStatus({ type: null, message: null });
 
       if (data.payPortalName === "Zalopay") {
-        const orderUrl = await generateZaloPayRequest(data);
-
-        // Create transaction in Appwrite
-        const transaction = await createTransaction({
-          email,
-          payPortalName: data.payPortalName,
-          amount: data.amount,
-          lsDocumentNo: data.lsDocumentNo,
+        const response = await fetch("/api/payportal/zalopay", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email, // Add email to the request
+            lsDocumentNo: data.lsDocumentNo,
+            amount: data.amount,
+            payPortalName: data.payPortalName,
+          }),
         });
 
-        if (!transaction) {
-          throw new Error("Failed to create transaction");
+        const result = await response.json();
+        if (result.return_code !== 1) {
+          // Handle ZaloPay errors
+          setStatus({
+            type: "error",
+            message: `${result.return_message}${
+              result.sub_return_message ? `: ${result.sub_return_message}` : ""
+            }`,
+          });
+        } else {
+          // Handle success
+          setStatus({
+            type: "success",
+            message:
+              "QR Code generated successfully. Please scan to complete payment.",
+          });
+          // Open payment URL in new tab
+          window.open(result.order_url, "_blank");
         }
-
-        // Open payment URL in new tab
-        window.open(orderUrl, "_blank");
       }
     } catch (error) {
-      console.error("Payment Error:", error);
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "An error occurred",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -203,42 +196,63 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
           )}
         />
 
-        {error && (
-          <div className="p-4 space-y-2 text-sm bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-center text-red-700">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="font-medium">Payment Error</span>
+        {status.type && (
+          <div
+            className={`p-4 space-y-2 text-sm rounded-md border ${
+              status.type === "success"
+                ? "bg-green-50 border-green-200"
+                : "bg-red-50 border-red-200"
+            }`}
+          >
+            <div
+              className={`flex items-center ${
+                status.type === "success" ? "text-green-700" : "text-red-700"
+              }`}
+            >
+              {status.type === "success" ? (
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+              <span className="font-medium">
+                {status.type === "success"
+                  ? "Success"
+                  : "Generate QR Payment Error:"}
+              </span>
             </div>
-            <p className="text-red-600 ml-6">{error}</p>
-          </div>
-        )}
-
-        {/* {qrCode && (
-          <div className="flex flex-col items-center gap-4 p-4 border rounded-md">
-            <Image
-              src={qrCode}
-              alt="Payment QR Code"
-              width={200}
-              height={200}
-              className="rounded-md"
-            />
-            <p className="text-sm text-gray-500">
-              Scan this QR code to complete your payment
+            <p
+              className={`ml-6 ${
+                status.type === "success" ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {status.message}
             </p>
           </div>
-        )} */}
+        )}
 
         <Button
           type="submit"
