@@ -1,12 +1,7 @@
 // app/api/payment/zalopay/route.ts  
 import { NextRequest, NextResponse } from 'next/server';  
 import CryptoJS from 'crypto-js';   
-import { createTransaction, getTransactionsByDocNo } from '@/lib/actions/transaction.actions';
-import { databases } from '@/lib/appwrite-client';
-import { appwriteConfig } from '@/lib/appwrite-config';
-
-const DATABASE_ID = appwriteConfig.databaseId
-const TRANSACTION_COLLECTION_ID = appwriteConfig.transactionCollectionId
+import { createTransaction, getTransactionsByDocNo, updateTransaction } from '@/lib/actions/transaction.actions';
 
 const config = {  
   app_id: 4068,  
@@ -15,56 +10,47 @@ const config = {
   callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/payportal/zalopay/callback`
 };  
 
-async function updateTimeRequest(documentId: string, currentCount: string) {  
-  try {  
-      await databases.updateDocument(  
-          DATABASE_ID!,  
-          TRANSACTION_COLLECTION_ID!,  
-          documentId,  
-          {  
-            time_request: (parseInt(currentCount) + 1).toString()
-          }  
-      );  
-  } catch (error) {  
-      console.error('Error updating time_request:', error);  
-      throw error;  
-  }  
-}
-
 async function createZaloPayOrder(email: string, lsDocumentNo: string, amount: string, timeRequest: string) {  
-  const embed_data = JSON.stringify({ email });  
-  const item = "[]";  
-  const app_trans_id = `${timeRequest}_${lsDocumentNo}`;  
+  const embed_data =  "{}";  
+  const item = "[]";
+   // Create date format yymmdd  
+   const today = new Date();  
+   const yy = today.getFullYear().toString().slice(-2);  
+   const mm = String(today.getMonth() + 1).padStart(2, '0');  
+   const dd = String(today.getDate()).padStart(2, '0');  
+   const dateFormat = `${yy}${mm}${dd}`;
+   
+  const app_trans_id = `${dateFormat}_${timeRequest}_${lsDocumentNo}`; 
   const app_time = Date.now();  
 
   // Create order object with all values as strings  
   const order = {  
-      app_id: config.app_id,  
-      app_user: "HPI",  
-      app_trans_id,  
-      app_time: app_time,  
-      expire_duration_seconds: "900",  
-      amount: parseInt(amount),  
-      description: `Payment for order #${app_trans_id}`,  
-      item,  
-      embed_data,  
-      bank_code: "zalopayapp",  
-      callback_url: config.callback_url  
+    app_id: config.app_id,
+    app_user: "HPI",
+    app_trans_id,  
+    app_time: app_time,  
+    expire_duration_seconds: 900,  
+    amount: parseInt(amount),  
+    description: `Payment for order #${app_trans_id}`,  
+    item,  
+    embed_data,
+    bank_code: "zalopayapp",  
+    callback_url: config.callback_url  
   };  
 
   // Create mac string using original number values where needed  
   const macString = [  
-      config.app_id,  
-      order.app_trans_id,  
-      order.app_user,  
-      parseInt(amount),  
-      app_time,  
-      embed_data,
-      item  
+    config.app_id,  
+    order.app_trans_id,  
+    order.app_user,  
+    order.amount,  
+    order.app_time,  
+    order.embed_data,
+    order.item  
   ].join('|');  
-
+  console.log('macString:',macString);
   const mac = CryptoJS.HmacSHA256(macString, config.key1).toString();  
-
+  console.log('mac:',mac);
   // Create final request body  
   const requestBody = new URLSearchParams();  
   Object.entries({  
@@ -86,6 +72,7 @@ async function createZaloPayOrder(email: string, lsDocumentNo: string, amount: s
   console.log('createZaloPayOrder function respond:',result)
   return result;  
 }
+
 export async function POST(req: NextRequest) {  
   try {
     const requestData = await req.json();  
@@ -132,12 +119,21 @@ export async function POST(req: NextRequest) {
       }
 
       console.log('Update time_request and generate new QR');
-      await updateTimeRequest(transaction.$id, transaction.time_request);  
+      const newTimeRequest = (parseInt(transaction.time_request) + 1).toString();
+
+      // Update transaction first  
+      await updateTransaction({  
+        documentId: transaction.$id,  
+        data: {  
+          time_request: newTimeRequest  
+        }  
+      });
+
       const result = await createZaloPayOrder(  
           email,   
           lsDocumentNo,   
           amount,   
-          (parseInt(transaction.time_request) + 1).toString()  
+          newTimeRequest
       );  
 
       console.log('QR Code generated successfully');
@@ -147,7 +143,7 @@ export async function POST(req: NextRequest) {
                   ...result,  
                   return_message: 'QR Code generated successfully',  
                   sub_return_message: 'Please proceed with payment',  
-                  attempt: (parseInt(transaction.time_request) + 1).toString() 
+                  attempt: newTimeRequest
               }),  
               { status: 200 }  
           );  
@@ -157,7 +153,7 @@ export async function POST(req: NextRequest) {
       return new NextResponse(  
           JSON.stringify({  
               ...result,  
-              attempt: (parseInt(transaction.time_request) + 1).toString()  
+              attempt: newTimeRequest 
           }),  
           { status: 400 }  
       );
@@ -197,6 +193,19 @@ export async function POST(req: NextRequest) {
           }),  
           {  
             status: 200,  
+            headers: {  
+              'Content-Type': 'application/json',  
+            },  
+          }  
+        );
+      } else {
+        return new NextResponse(  
+          JSON.stringify({  
+            ...result,  
+            attempt: '1'  
+          }),  
+          {   
+            status: 400,  
             headers: {  
               'Content-Type': 'application/json',  
             },  

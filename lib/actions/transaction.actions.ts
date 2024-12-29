@@ -28,6 +28,25 @@ export const createTransaction = async (transaction: CreateTransactionProps) => 
   }
 }
 
+export const updateTransaction = async ({ documentId, data }: UpdateTransactionProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    console.log('Updating transaction:', { documentId, data });
+
+    const updatedTransaction = await database.updateDocument(
+      DATABASE_ID!,
+      TRANSACTION_COLLECTION_ID!,
+      documentId,
+      data
+    )
+    return parseStringify(updatedTransaction);
+  } catch (error) {
+    console.error('transaction-action updateTransaction error:', error);
+    throw error;
+  }
+}
+
 export const getTransactionsByEmail = async ({email}: getTransactionsByEmailProps) => {
   try {
     const { database } = await createAdminClient();
@@ -58,18 +77,25 @@ export const getTransactionsByEmail = async ({email}: getTransactionsByEmailProp
   }
 }
 
-export const getTransactionsByDocNo = async ({lsDocumentNo}: getTransactionsByDocNoProps) => {
+export const getTransactionsByDocNo = async (lsDocumentNo: string) => {
   try {
+
+    console.log('getTransactionsByDocNo Input lsDocumentNo:', lsDocumentNo);
     const { database } = await createAdminClient();
 
     const transactions = await database.listDocuments(
       DATABASE_ID!,
       TRANSACTION_COLLECTION_ID!,
-      [Query.equal('lsDocumentNo', lsDocumentNo)],
+      [  
+        // Make sure to use the exact field name as in your Appwrite collection  
+        Query.equal('lsDocumentNo', [lsDocumentNo])  // Note the array syntax  
+      ]
     )
-    return parseStringify(transactions.documents[0]);
+    console.log('Query result:', transactions.documents);
+
+    return transactions.documents[0] || null;
   } catch (error) {
     console.log(error);
-    return null;
+    throw error;
   }
 }

@@ -1,5 +1,3 @@
-// lib/client/userSubscriptions.ts  
-
 "use client";  
 
 import { client } from '@/lib/appwrite-client';  

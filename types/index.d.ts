@@ -61,6 +61,17 @@ declare type Transaction = {
   receiverBankId: string;
 };
 
+type AppwriteTransaction = {  
+  email?: string;  
+  payPortalName?: string;  
+  channel?: string;  
+  status?: string;  
+  amount?: string;  
+  lsDocumentNo?: string;  
+  time_request?: string;  
+  // Add other possible attributes here  
+}
+
 // Plaid Transaction Interface  
 declare interface PlaidTransaction {  
   transaction_id: string;  
@@ -334,6 +345,11 @@ declare interface CreateTransactionProps {
   amount: string;
   lsDocumentNo: string;
   time_request: string;
+}
+
+interface UpdateTransactionProps {  
+  documentId: string;  
+  data: Partial<TransactionAttributes>;  // Allows any combination of attributes  
 }
 
 declare interface getTransactionsByBankIdProps {
