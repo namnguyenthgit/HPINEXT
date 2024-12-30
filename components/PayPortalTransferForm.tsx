@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { processPayment } from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
@@ -56,6 +57,7 @@ interface ZaloPaySuccessResponse extends ZaloPayResponse {
 }
 
 const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{
     type: "success" | "error" | "warning" | null;
@@ -70,6 +72,32 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
       amount: "",
     },
   });
+
+  const handlePaymentRedirect = (url: string) => {
+    // Method 1: Try window.open first
+    const newWindow = window.open(url, "_blank");
+
+    // If popup was blocked or failed
+    if (
+      !newWindow ||
+      newWindow.closed ||
+      typeof newWindow.closed === "undefined"
+    ) {
+      // Method 2: Create and click a temporary link
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Method 3: If all else fails, redirect in same window
+      setTimeout(() => {
+        window.location.href = url;
+      }, 1000);
+    }
+  };
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -99,7 +127,7 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
 
         // Open payment URL in new tab if it exists in the response
         if (zaloPayResult.order_url) {
-          window.open(zaloPayResult.order_url, "_blank");
+          handlePaymentRedirect(zaloPayResult.order_url);
         }
       }
     } catch (error) {
