@@ -32,7 +32,7 @@ export const updateTransaction = async ({ documentId, data }: UpdateTransactionP
   try {
     const { database } = await createAdminClient();
 
-    console.log('Updating transaction:', { documentId, data });
+    //console.log('Updating transaction:', { documentId, data });
 
     const updatedTransaction = await database.updateDocument(
       DATABASE_ID!,
@@ -80,7 +80,7 @@ export const getTransactionsByEmail = async ({email}: getTransactionsByEmailProp
 export const getTransactionsByDocNo = async (lsDocumentNo: string) => {
   try {
 
-    console.log('getTransactionsByDocNo Input lsDocumentNo:', lsDocumentNo);
+    //console.log('getTransactionsByDocNo Input lsDocumentNo:', lsDocumentNo);
     const { database } = await createAdminClient();
 
     const transactions = await database.listDocuments(
@@ -91,7 +91,7 @@ export const getTransactionsByDocNo = async (lsDocumentNo: string) => {
         Query.equal('lsDocumentNo', [lsDocumentNo])  // Note the array syntax  
       ]
     )
-    console.log('Query result:', transactions.documents);
+    //console.log('Query result:', transactions.documents);
 
     return transactions.documents[0] || null;
   } catch (error) {

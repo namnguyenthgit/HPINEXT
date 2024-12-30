@@ -412,4 +412,14 @@ declare interface createPrivateBankAccountProps {
 
 declare interface AddBankProps {  
   userId: string;  
-} 
+}
+
+//zalopay
+declare interface createZalopayOrderParams {
+  app_trans_id: string;  
+  app_user: string;  
+  amount: string | number; 
+  description: string;  
+  embed_data?: string;  
+  item?: string;
+}

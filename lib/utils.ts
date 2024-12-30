@@ -3,6 +3,7 @@ import { type ClassValue, clsx } from "clsx";
 import qs from "query-string";
 import { twMerge } from "tailwind-merge";
 import { z } from "zod";
+import CryptoJS from 'crypto-js';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -184,6 +185,15 @@ export function encryptId(id: string) {
 export function decryptId(id: string) {
   return atob(id);
 }
+
+export function encryptHmacSHA256(data:string, key: string){
+  return CryptoJS.HmacSHA256(data, key).toString();
+}
+
+export function verifyHmacSHA256(originalData: string, key: string, hashToVerify: string) {  
+  const generatedHash = encryptHmacSHA256(originalData, key);  
+  return generatedHash === hashToVerify;
+}  
 
 export const getTransactionStatus = (date: Date) => {
   const today = new Date();
