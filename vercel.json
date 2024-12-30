@@ -1,0 +1,11 @@
+{  
+  "routes": [  
+    {  
+      "src": "/api/payportal/callback/zalopay",  
+      "methods": ["POST"],  
+      "headers": {  
+        "Access-Control-Allow-Origin": "*"  
+      }  
+    }  
+  ]  
+}
