@@ -423,3 +423,61 @@ declare interface createZalopayOrderParams {
   embed_data?: string;  
   item?: string;
 }
+
+//zalocalback
+interface TransactionInfo {  
+    documentNo: string;  
+    status: 'success' | 'failed';  
+    providerTransId: string;  
+    paymentTime: string;  
+    errorMessage?: string;  
+}  
+
+interface ZaloPayCallbackData {  
+    app_trans_id: string;  
+    app_time: number;  
+    app_user: string;  
+    amount: number;  
+    embed_data: string;  
+    item: string;  
+    zp_trans_id: string;  
+    server_time: number;  
+    channel: number;  
+    merchant_user_id: string;  
+    user_fee_amount: number;  
+    discount_amount: number;  
+    status: number;  
+    error_message?: string;  
+    mac: string;  
+}  
+
+interface CallbackResult {  
+    success: boolean;  
+    transactionId: string;  
+    documentNo: string;  
+}
+
+// Payment portal configurations  
+const PAYMENT_PORTALS = {  
+    zalopay: {  
+        key: process.env.ZALOPAY_KEY2!,  
+        verifyCallback: (data: ZaloPayCallbackData): boolean => {  
+            const { mac, ...dataWithoutMac } = data;  
+            const dataStr = Object.keys(dataWithoutMac)  
+                .sort()  
+                .map(key => `${key}=${dataWithoutMac[key as keyof typeof dataWithoutMac]}`)  
+                .join('|');  
+                return verifyHmacSHA256(dataStr, PAYMENT_PORTALS.zalopay.key, mac); 
+        },  
+        extractTransactionInfo: (data: ZaloPayCallbackData): TransactionInfo => ({  
+            documentNo: data.app_trans_id.split('_')[2],  
+            status: data.status === 1 ? 'success' : 'failed',  
+            providerTransId: data.zp_trans_id,  
+            paymentTime: new Date(data.app_time).toISOString(),  
+            errorMessage: data.error_message  
+        })
+    },  
+    // Add other payment portals here  
+} as const;
+
+type PaymentPortal = keyof typeof PAYMENT_PORTALS;
