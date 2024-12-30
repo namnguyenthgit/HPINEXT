@@ -211,7 +211,3 @@ export const authFormSchema = (type: string) => z.object({
   email: z.string().email(),
   password: z.string().min(8),
 })
-
-export function isValidPortal(portal: string): portal is PaymentPortal {  
-  return portal in PAYMENT_PORTALS;  
-} 

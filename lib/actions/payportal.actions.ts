@@ -5,7 +5,7 @@ import { createTransaction, getTransactionsByDocNo, updateTransaction } from './
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
 import { ZaloPayResponse } from "../zalo.config";
 import { NextResponse } from 'next/server';
-import { isValidPortal } from '../utils';
+import { PAYMENT_PORTALS, isValidPortal, PaymentPortal } from '../appconfig';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -224,7 +224,7 @@ export async function verifyCallback(
         throw new Error(`Unsupported payment portal: ${portal}`);  
     }  
     
-    return PAYMENT_PORTALS[portal as PaymentPortal].verifyCallback(data);  
+    return PAYMENT_PORTALS[portal].verifyCallback(data);  
 }
 
 

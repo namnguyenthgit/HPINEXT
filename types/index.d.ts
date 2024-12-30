@@ -456,28 +456,3 @@ interface CallbackResult {
     transactionId: string;  
     documentNo: string;  
 }
-
-// Payment portal configurations  
-const PAYMENT_PORTALS = {  
-    zalopay: {  
-        key: process.env.ZALOPAY_KEY2!,  
-        verifyCallback: (data: ZaloPayCallbackData): boolean => {  
-            const { mac, ...dataWithoutMac } = data;  
-            const dataStr = Object.keys(dataWithoutMac)  
-                .sort()  
-                .map(key => `${key}=${dataWithoutMac[key as keyof typeof dataWithoutMac]}`)  
-                .join('|');  
-                return verifyHmacSHA256(dataStr, PAYMENT_PORTALS.zalopay.key, mac); 
-        },  
-        extractTransactionInfo: (data: ZaloPayCallbackData): TransactionInfo => ({  
-            documentNo: data.app_trans_id.split('_')[2],  
-            status: data.status === 1 ? 'success' : 'failed',  
-            providerTransId: data.zp_trans_id,  
-            paymentTime: new Date(data.app_time).toISOString(),  
-            errorMessage: data.error_message  
-        })
-    },  
-    // Add other payment portals here  
-} as const;
-
-type PaymentPortal = keyof typeof PAYMENT_PORTALS;
