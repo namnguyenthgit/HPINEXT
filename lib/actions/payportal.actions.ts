@@ -12,41 +12,36 @@ export interface PaymentRequest {
     email: string;  
     amount: string;  
     lsDocumentNo: string;  
-    payPortalName: string;  
+    payPortalName: "VNPay" | "Zalopay" | "OCB pay" | "Galaxy Pay";
+    zaloOrder?: string;
 }
 
 type PaymentResponse = ZaloPayResponse; // Union type with other portal responses when added 
 
 // Helper function to check existing ZaloPay payment  
 async function checkExistingZaloPayment(  
-    lsDocumentNo: string,  
+    app_trans_id: string | undefined  
 ): Promise<ZaloPayResponse | null> {  
-    const today = new Date();  
-    const yy = today.getFullYear().toString().slice(-2);  
-    const mm = String(today.getMonth() + 1).padStart(2, '0');  
-    const dd = String(today.getDate()).padStart(2, '0');  
-    const dateFormat = `${yy}${mm}${dd}`;  
-
-    // Try to query with time_request from 1 up to a reasonable number  
-    for (let timeRequest = 1; timeRequest <= 10; timeRequest++) {  
-        const app_trans_id = `${dateFormat}_${timeRequest}_${lsDocumentNo}`;  
-        try {  
-            const queryResult = await queryZalopayOrder(app_trans_id);  
-            if (queryResult.return_code === 1) {  
-                return queryResult;  
-            }  
-        } catch (error) {  
-            console.error(`Error querying ZaloPay order for attempt ${timeRequest}:`, error);  
+    if (!app_trans_id) {  
+        return null;  
+    } 
+    
+    try {  
+        const queryResult = await queryZalopayOrder(app_trans_id);  
+        if (queryResult.return_code === 1) {  
+            return queryResult;  
         }  
+    } catch (error) {  
+        console.error(`Error querying ZaloPay order "${app_trans_id}":`, error);  
     }  
     return null;  
-} 
+}
 
 // Generic payment processing function  
 export async function processPayment(  
     paymentRequest: PaymentRequest  
 ): Promise<PaymentResponse> {  
-    const { email, amount, lsDocumentNo, payPortalName } = paymentRequest;  
+    const { email, amount, lsDocumentNo, payPortalName, zaloOrder } = paymentRequest;  
 
     // Validate request  
     if (!amount || !email || !lsDocumentNo || !payPortalName) {  
@@ -56,19 +51,25 @@ export async function processPayment(
             sub_return_code: -400,  
             sub_return_message: "Missing required fields"  
         };  
-    }  
+    }
 
-    try {    
-        const existingPayment = await checkExistingZaloPayment(lsDocumentNo);
+    try {
+        const transaction = await getTransactionsByDocNo(lsDocumentNo);
+        const existingPayment = await checkExistingZaloPayment(zaloOrder);
         if (existingPayment?.return_code === 1) {  
-            // Payment exists and is successful  
-            const transaction = await getTransactionsByDocNo(lsDocumentNo);  
+            // Payment exists and is successful
             if (transaction) {  
                 // Update existing transaction to success  
                 await updateTransaction({  
                     documentId: transaction.$id,  
                     data: { status: 'success' }  
-                });  
+                });
+                
+                return {
+                    return_code: 3,  
+                    return_message: "Payment Already Processed",  
+                    sub_return_message: "This document has already been paid successfully"
+                }
             } else {
                 // Create new transaction  
                 await createTransaction({  
@@ -76,7 +77,7 @@ export async function processPayment(
                     payPortalName,  
                     amount,  
                     lsDocumentNo,  
-                    time_request: '1'  
+                    time_request: '1'
                 });
 
                  // Then update its status to success  
@@ -93,11 +94,7 @@ export async function processPayment(
                     sub_return_message: "This document has already been paid successfully"  
                 };
             }
-           
         }
-
-        // Check existing transaction  
-        const transaction = await getTransactionsByDocNo(lsDocumentNo);
 
         if (transaction) {  
             // Handle existing transaction  
@@ -156,7 +153,7 @@ export async function processPayment(
                     payPortalName,  
                     amount,  
                     lsDocumentNo,  
-                    time_request: '1'  
+                    time_request: '1',
                 });  
 
                 if (!newTransaction) {  

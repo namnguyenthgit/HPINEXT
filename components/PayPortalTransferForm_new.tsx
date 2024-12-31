@@ -26,11 +26,23 @@ import { Button } from "@/components/ui/button";
 import { processPayment } from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
 
+interface PaymentRequest {  
+  email: string;  
+  amount: string;  
+  lsDocumentNo: string;  
+  payPortalName: "VNPay" | "Zalopay" | "OCB pay" | "Galaxy Pay";  
+  zaloOrder?: string | undefined; // Make it explicitly optional  
+}
+
 const formSchema = z.object({
-  payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
+  payPortalName: z.enum(["VNPay", "Zalopay", "OCB pay", "Galaxy Pay"]),
   lsDocumentNo: z.string().min(1, "Document number is required"),
   amount: z.string().min(1, "Amount is required"),
+  zaloOrder: z.string().min(10, "Zalo Order must be at least 10 characters").optional(),
 });
+
+// Type for form values  
+type FormValues = z.infer<typeof formSchema>;
 
 const PAY_PORTALS = [
   // { name: "VNPay", value: "VNPay" },
@@ -68,18 +80,24 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
       payPortalName: undefined,
       lsDocumentNo: "",
       amount: "",
+      zaloOrder: undefined, // Optional field
     },
   });
-  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+  
+  const onSubmit = async (data: FormValues) => {
     try {
       setIsLoading(true);
       setStatus({ type: null, message: null });
-      const result = await processPayment({
-        email,
-        lsDocumentNo: data.lsDocumentNo,
-        amount: data.amount,
-        payPortalName: data.payPortalName,
-      });
+      // Create the payment request  
+      const paymentRequest: PaymentRequest = {  
+        email,  
+        lsDocumentNo: data.lsDocumentNo,  
+        amount: data.amount,  
+        payPortalName: data.payPortalName,  
+        ...(data.zaloOrder && { zaloOrder: data.zaloOrder })  
+      };
+
+      const result = await processPayment(paymentRequest);
 
       if (result.return_code !== 1) {
         setStatus({

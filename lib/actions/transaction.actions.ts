@@ -92,7 +92,6 @@ export const getTransactionsByDocNo = async (lsDocumentNo: string) => {
       ]
     )
     //console.log('Query result:', transactions.documents);
-
     return transactions.documents[0] || null;
   } catch (error) {
     console.log(error);
