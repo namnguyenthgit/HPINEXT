@@ -105,7 +105,16 @@ export async function processPayment(
                         sub_return_message: `${payPortalName} Payment "${payPortalTrans.payPortalOrder}" is still being processed. Please wait.`,  
                         payPortalOrder: payPortalTrans.payPortalOrder  
                     };  
-                }  
+                }
+
+                if (existingPayment.return_code === 2 && existingPayment.sub_return_code != -54) {  
+                    return {  
+                        return_code: 2,  
+                        return_message: existingPayment.return_message,  
+                        sub_return_message: existingPayment.sub_return_message,  
+                        payPortalOrder: payPortalTrans.payPortalOrder  
+                    };  
+                }
             }  
 
             // Case 3: Payment failed or expired - generate new QR  
