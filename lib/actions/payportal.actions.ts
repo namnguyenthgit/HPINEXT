@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { PAYMENT_PORTALS, isValidPortal, PaymentPortal } from '../appconfig';
 import { createPayPortalTrans, deletePayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString } from '../utils';
+import { CallbackResult, ZaloPayCallbackData } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -258,7 +259,12 @@ export async function verifyCallback(
         throw new Error(`Unsupported payment portal: ${portal}`);  
     }  
     
-    return PAYMENT_PORTALS[portal].verifyCallback(data);  
+    try {  
+        return PAYMENT_PORTALS[portal].verifyCallback(data);  
+    } catch (error) {  
+        console.error('Verification error:', error);  
+        return false;  
+    }  
 }
 
 

@@ -433,26 +433,73 @@ interface TransactionInfo {
     errorMessage?: string;  
 }  
 
+// Update ZaloPayCallbackData to match actual ZaloPay fields  
 interface ZaloPayCallbackData {  
-    app_trans_id: string;  
-    app_time: number;  
-    app_user: string;  
-    amount: number;  
-    embed_data: string;  
-    item: string;  
-    zp_trans_id: string;  
-    server_time: number;  
-    channel: number;  
-    merchant_user_id: string;  
-    user_fee_amount: number;  
-    discount_amount: number;  
-    status: number;  
-    error_message?: string;  
-    mac: string;  
-}  
+  app_id?: number;  
+  app_trans_id: string;  
+  app_time: number;  
+  app_user: string;  
+  amount: number;  
+  embed_data: string;  
+  item: string;  
+  zp_trans_id: string | number;  
+  server_time: number;  
+  channel: number;  
+  merchant_user_id: string;  
+  zp_user_id?: string;  
+  user_fee_amount: number;  
+  discount_amount: number;  
+  status?: number;  
+  error_message?: string;  
+  mac?: string;  
+} 
 
-interface CallbackResult {  
+interface ZalopayCallbackResult {  
     success: boolean;  
     payPortalTransId: string;  
     documentNo: string;  
+}
+
+interface RawZaloPayCallback {  
+  data: string;  
+  mac: string;  
+  type: number;  
+} 
+
+interface ParsedZaloPayData {  
+  app_id: number;  
+  app_trans_id: string;  
+  app_time: number;  
+  app_user: string;  
+  amount: number;  
+  embed_data: string;  
+  item: string;  
+  zp_trans_id: number | string;  
+  server_time: number;  
+  channel: number;  
+  merchant_user_id: string;  
+  zp_user_id?: string;  
+  user_fee_amount: number;  
+  discount_amount: number;  
+}
+
+export interface ZaloPayCallbackData extends ParsedZaloPayData {  
+  mac?: string;  
+  status?: number;  
+  error_message?: string;  
+}
+
+export type ZaloCallbackData = RawZaloPayCallback | ZaloPayCallbackData;
+
+export interface PayPortalPaymentResponse {  
+  return_code: number;  
+  return_message: string;  
+}  
+
+export interface TestResponse {  
+  message: string;  
+}  
+
+export interface ErrorResponse {  
+  error: string;  
 }

@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'; 
-import { createTransaction, getTransactionsByDocNo, updateTransaction } from '@/lib/actions/payportaltrans.actions';
+import { NextRequest, NextResponse } from 'next/server';
 import { encryptHmacSHA256 } from '@/lib/utils';
 import { zaloConfig } from '@/lib/zalo.config';
 
@@ -86,7 +85,7 @@ export async function POST(req: NextRequest) {
     }
 
     //console.log('Get existing transaction, lsDocumentNo=',lsDocumentNo);
-    const transaction = await getTransactionsByDocNo(lsDocumentNo);
+    const transaction = await getPayPortalTransByDocNo(lsDocumentNo);
     
     if (transaction) {
       //console.log('Check if transaction is already successful'); 

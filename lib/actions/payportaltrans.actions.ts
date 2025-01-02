@@ -4,6 +4,7 @@ import { ID, Query } from "node-appwrite";
 import { createAdminClient } from "../appwrite";
 import { parseStringify } from "../utils";
 import { appwriteConfig } from "../appwrite-config";
+import { CreatePayPortalTransProps, getPayPortalTransByEmailProps, UpdatePayPortalTransProps } from "@/types";
 
 const DATABASE_ID = appwriteConfig.databaseId
 const PAYPORTALTRANS_COLLECTION_ID = appwriteConfig.payPortalTransCollectionId
