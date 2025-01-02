@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { createTransfer } from "@/lib/actions/dwolla.actions";
-import { createTransaction } from "@/lib/actions/transaction.actions";
+import { createTransaction } from "@/lib/actions/payportaltrans.actions";
 import { getBank, getBankByAccountId } from "@/lib/actions/user.actions";
 import { decryptId } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ import {
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { BankDropdown } from "./BankDropdown";
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -37,11 +37,11 @@ const formSchema = z.object({
 
 const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
   const router = useRouter();
-  const { toast } = useToast();  
-  const [isPending, startTransition] = useTransition();  
+  const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Combined loading state  
+  // Combined loading state
   const isLoading = isPending || isSubmitting;
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,10 +59,10 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
     setIsSubmitting(true);
 
     try {
-      // Show loading toast  
-      toast({  
-        title: "Processing transfer...",  
-        description: "Please wait while we process your transfer.",  
+      // Show loading toast
+      toast({
+        title: "Processing transfer...",
+        description: "Please wait while we process your transfer.",
       });
 
       const receiverAccountId = decryptId(data.sharableId);
@@ -70,13 +70,13 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         accountId: receiverAccountId,
       });
       const senderBank = await getBank({ documentId: data.senderBank });
-      if (!receiverBank || !senderBank) {  
-        toast({  
-          variant: "destructive",  
-          title: "Error",  
-          description: "Invalid bank account information",  
-        });  
-        return;  
+      if (!receiverBank || !senderBank) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Invalid bank account information",
+        });
+        return;
       }
 
       const transferParams = {
@@ -86,13 +86,13 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
       };
       // create transfer
       const transfer = await createTransfer(transferParams);
-      if (!transfer) {  
-        toast({  
-          variant: "destructive",  
-          title: "Error",  
-          description: "Transfer creation failed",  
-        });  
-        return;  
+      if (!transfer) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Transfer creation failed",
+        });
+        return;
       }
 
       // create transfer transaction
@@ -110,28 +110,27 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         const newTransaction = await createTransaction(transaction);
 
         if (newTransaction) {
-          toast({  
-            title: "Success",  
-            description: "Transfer completed successfully!",  
+          toast({
+            title: "Success",
+            description: "Transfer completed successfully!",
           });
 
           form.reset();
-          startTransition(() => {  
-            router.push("/");  
+          startTransition(() => {
+            router.push("/");
           });
         }
       }
     } catch (error: any) {
-      // Show error message  
-      toast({  
-        variant: "destructive",  
-        title: "Error",  
-        description: error.message || "Transfer failed. Please try again.",  
-      });  
+      // Show error message
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Transfer failed. Please try again.",
+      });
       console.error("Transfer failed:", error);
-    }
-    finally {  
-      setIsSubmitting(false);  
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -279,12 +278,16 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
         />
 
         <div className="payment-transfer_btn-box">
-          <Button type="submit" className="payment-transfer_btn" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="payment-transfer_btn"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
-                <div className="flex items-center gap-2">  
-                  <Loader2 size={20} className="animate-spin" />  
-                  <span>Processing...</span>  
+                <div className="flex items-center gap-2">
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Processing...</span>
                 </div>
               </>
             ) : (

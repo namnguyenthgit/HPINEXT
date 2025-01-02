@@ -339,15 +339,15 @@ declare interface ZaloPayResponse {
   qr_code: string;  
 }  
 
-declare interface CreateTransactionProps {
+declare interface CreatePayPortalTransProps {
   email: string;
   payPortalName: string;
   amount: string;
   lsDocumentNo: string;
-  time_request: string;
+  payPortalOrder: string;
 }
 
-interface UpdateTransactionProps {  
+interface UpdatePayPortalTransProps {  
   documentId: string;  
   data: Partial<TransactionAttributes>;  // Allows any combination of attributes  
 }
@@ -356,11 +356,11 @@ declare interface getTransactionsByBankIdProps {
   bankId: string;
 }
 
-declare interface getTransactionsByEmailProps {
+declare interface getPayPortalTransByEmailProps {
   email: string;
 }
 
-declare interface getTransactionsByDocNoProps {
+declare interface getPayPortalTransByDocNoProps {
   lsDocumentNo: string;
 }
 declare interface signInProps {
@@ -453,6 +453,6 @@ interface ZaloPayCallbackData {
 
 interface CallbackResult {  
     success: boolean;  
-    transactionId: string;  
+    payPortalTransId: string;  
     documentNo: string;  
 }

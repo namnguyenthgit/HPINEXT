@@ -3,7 +3,7 @@ import RecentTransactions from "@/components/RecentTransactions";
 import RightSidebar from "@/components/RightSidebar";
 import TotalBalanceBox from "@/components/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
-import { getTransactionsByEmail } from "@/lib/actions/transaction.actions";
+import { getPayPortalTransByEmail } from "@/lib/actions/payportaltrans.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { redirect } from "next/navigation";
 import React from "react";
@@ -23,7 +23,7 @@ const Home = async (props: SearchParamProps) => {
     // return null;
   }
 
-  const accounts = await getTransactionsByEmail({
+  const accounts = await getPayPortalTransByEmail({
     email: loggedIn.$email,
   });
 

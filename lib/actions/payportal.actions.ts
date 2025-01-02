@@ -1,11 +1,12 @@
 // lib/actions/payportal.actions.ts  
 'use server'  
 
-import { createTransaction, getTransactionsByDocNo, updateTransaction } from './transaction.actions'; 
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
 import { ZaloPayResponse } from "../zalo.config";
 import { NextResponse } from 'next/server';
 import { PAYMENT_PORTALS, isValidPortal, PaymentPortal } from '../appconfig';
+import { createPayPortalTrans, deletePayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
+import { generateUniqueString } from '../utils';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -13,10 +14,12 @@ export interface PaymentRequest {
     amount: string;  
     lsDocumentNo: string;  
     payPortalName: "VNPay" | "Zalopay" | "OCB pay" | "Galaxy Pay";
-    zaloOrder?: string;
 }
 
-type PaymentResponse = ZaloPayResponse; // Union type with other portal responses when added 
+interface PaymentResponse extends ZaloPayResponse {  
+    payPortalOrder?: string;  
+    attempt?: string;  
+}
 
 // Helper function to check existing ZaloPay payment  
 async function checkExistingZaloPayment(  
@@ -24,26 +27,36 @@ async function checkExistingZaloPayment(
 ): Promise<ZaloPayResponse | null> {  
     if (!app_trans_id) {  
         return null;  
-    } 
+    }   
     
     try {  
         const queryResult = await queryZalopayOrder(app_trans_id);  
-        if (queryResult.return_code === 1) {  
-            return queryResult;  
-        }  
+        return queryResult;  
     } catch (error) {  
         console.error(`Error querying ZaloPay order "${app_trans_id}":`, error);  
+        return null;  
     }  
-    return null;  
+}
+
+async function safeUpdatePayPortalTrans(documentId: string, data: unknown): Promise<boolean> {  
+    try {  
+        const result = await updatePayPortalTrans({  
+            documentId,  
+            data  
+        });  
+        return result !== null;  
+    } catch (error) {  
+        console.error('Failed to update PayPortalTrans:', error);  
+        return false;  
+    }  
 }
 
 // Generic payment processing function  
 export async function processPayment(  
     paymentRequest: PaymentRequest  
 ): Promise<PaymentResponse> {  
-    const { email, amount, lsDocumentNo, payPortalName, zaloOrder } = paymentRequest;  
+    const { email, amount, lsDocumentNo, payPortalName } = paymentRequest;  
 
-    // Validate request  
     if (!amount || !email || !lsDocumentNo || !payPortalName) {  
         return {  
             return_code: 2,  
@@ -51,127 +64,136 @@ export async function processPayment(
             sub_return_code: -400,  
             sub_return_message: "Missing required fields"  
         };  
-    }
+    }  
 
-    try {
-        const transaction = await getTransactionsByDocNo(lsDocumentNo);
-        const existingPayment = await checkExistingZaloPayment(zaloOrder);
-        if (existingPayment?.return_code === 1) {  
-            // Payment exists and is successful
-            if (transaction) {  
-                // Update existing transaction to success  
-                await updateTransaction({  
-                    documentId: transaction.$id,  
-                    data: { status: 'success' }  
-                });
-                
-                return {
-                    return_code: 3,  
-                    return_message: "Payment Already Processed",  
-                    sub_return_message: "This document has already been paid successfully"
-                }
-            } else {
-                // Create new transaction  
-                await createTransaction({  
-                    email,  
-                    payPortalName,  
-                    amount,  
-                    lsDocumentNo,  
-                    time_request: '1'
-                });
+    try {  
+        const payPortalTrans = await getPayPortalTransByDocNo(lsDocumentNo);  
+        
+        if (payPortalTrans && payPortalTrans.payPortalOrder) {  
+            const existingPayment = await checkExistingZaloPayment(payPortalTrans.payPortalOrder);  
+            
+            if (existingPayment) {  
+                // Case 1: Payment is successful  
+                if (existingPayment.return_code === 1) {  
+                    const updateSuccess = await safeUpdatePayPortalTrans(  
+                        payPortalTrans.$id,  
+                        { status: 'success' }  
+                    );  
 
-                 // Then update its status to success  
-                const newTransaction = await getTransactionsByDocNo(lsDocumentNo);  
-                if (newTransaction) {  
-                    await updateTransaction({  
-                        documentId: newTransaction.$id,  
-                        data: { status: 'success' }  
-                    });  
-                }
-                return {  
-                    return_code: 3,  
-                    return_message: "Payment Already Processed",  
-                    sub_return_message: "This document has already been paid successfully"  
-                };
-            }
-        }
+                    if (!updateSuccess) {  
+                        return {  
+                            return_code: 2,  
+                            return_message: "Update Failed",  
+                            sub_return_message: "Failed to update transaction status",  
+                            payPortalOrder: payPortalTrans.payPortalOrder  
+                        };  
+                    }  
 
-        if (transaction) {  
-            // Handle existing transaction  
-            if (transaction.status === 'success') {  
-                return {  
-                    return_code: 3,  
-                    return_message: "Payment Already Processed",  
-                    sub_return_message: "This document has already been paid successfully"  
-                };  
-            }  
+                    return {  
+                        return_code: 3,  
+                        return_message: "Payment Already Completed",  
+                        sub_return_message: `This document is already paid, ${payPortalName} order is "${payPortalTrans.payPortalOrder}"`,  
+                        payPortalOrder: payPortalTrans.payPortalOrder  
+                    };  
+                }  
 
-            if (transaction.status !== 'processing') {  
-                return {  
-                    return_code: 2,  
-                    return_message: "Invalid Transaction State",  
-                    sub_return_message: "Transaction is not in processing state"  
-                };  
-            }  
-
-            const newTimeRequest = (parseInt(transaction.time_request) + 1).toString();  
-
-            // Process payment based on portal  
-            const result = await processPaymentByPortal(  
-                payPortalName,  
-                email,  
-                lsDocumentNo,  
-                amount,  
-                newTimeRequest  
-            );
-
-            // Only update transaction if payment processing was successful  
-            if (result.return_code === 1) {  
-                await updateTransaction({  
-                    documentId: transaction.$id,  
-                    data: { time_request: newTimeRequest }  
-                });  
-            }
-
-            return {  
-                ...result,  
-                attempt: newTimeRequest  
-            };  
-        } else {  
-            // Handle new transaction  
-            const result = await processPaymentByPortal(  
-                payPortalName,  
-                email,  
-                lsDocumentNo,  
-                amount,  
-                '1'  
-            );  
-
-            if (result.return_code === 1) {  
-                const newTransaction = await createTransaction({  
-                    email,  
-                    payPortalName,  
-                    amount,  
-                    lsDocumentNo,  
-                    time_request: '1',
-                });  
-
-                if (!newTransaction) {  
+                // Case 2: Payment is still processing  
+                if (existingPayment.return_code === 3 && existingPayment.is_processing) {  
                     return {  
                         return_code: 2,  
-                        return_message: "Failed to create transaction record",  
-                        sub_return_code: -500,  
-                        sub_return_message: "Transaction creation failed"  
+                        return_message: "Payment In Progress",  
+                        sub_return_message: `${payPortalName} Payment "${payPortalTrans.payPortalOrder}" is still being processed. Please wait.`,  
+                        payPortalOrder: payPortalTrans.payPortalOrder  
                     };  
                 }  
             }  
 
-            return {  
-                ...result,  
-                attempt: '1'  
-            };  
+            // Case 3: Payment failed or expired - generate new QR  
+            console.log(`Generating new QR for payment ${payPortalTrans.payPortalOrder}`);  
+            const result = await processPaymentByPortal(  
+                payPortalName,  
+                email,  
+                lsDocumentNo,  
+                amount  
+            );  
+
+            if (result.return_code === 1) {  
+                const updateSuccess = await safeUpdatePayPortalTrans(  
+                    payPortalTrans.$id,  
+                    {  
+                        payPortalOrder: result.payPortalOrder,  
+                        status: 'processing',
+                    }  
+                );  
+
+                if (!updateSuccess) {  
+                    return {  
+                        return_code: 2,  
+                        return_message: "Update Failed",  
+                        sub_return_message: "Failed to update transaction with new payment order"  
+                    };  
+                }  
+            }  
+
+            return result;  
+
+        } else {  
+            // Handle new transaction creation  
+            const newTransaction = await createPayPortalTrans({  
+                email,  
+                payPortalName,  
+                amount,  
+                lsDocumentNo,  
+                payPortalOrder: '',
+            });  
+
+            if (newTransaction) {  
+                const result = await processPaymentByPortal(  
+                    payPortalName,  
+                    email,  
+                    lsDocumentNo,  
+                    amount  
+                );  
+
+                if (result.return_code === 1 && result.payPortalOrder) {   
+                    const updateSuccess = await safeUpdatePayPortalTrans(  
+                        newTransaction.$id,  
+                        {   
+                            payPortalOrder: result.payPortalOrder,  
+                            status: 'processing'  
+                        }  
+                    );  
+
+                    if (!updateSuccess) {  
+                        await deletePayPortalTrans(newTransaction.$id);  
+                        return {  
+                            return_code: 2,  
+                            return_message: "Update Failed",  
+                            sub_return_message: "Failed to update new transaction with payment order"  
+                        };  
+                    }  
+
+                    return result;  
+                } else {  
+                    await deletePayPortalTrans(newTransaction.$id);  
+                    return {  
+                        return_code: 2,  
+                        return_message: `Fail to generate ${payPortalName} QR code`,  
+                        sub_return_code: -500,  
+                        sub_return_message: "Transaction creation failed"  
+                    };  
+                }  
+            } else {  
+                return {  
+                    return_code: 2,  
+                    return_message: `Failed to create ${payPortalName} Transaction record`,  
+                    sub_return_code: -500,  
+                    sub_return_message: "Transaction creation failed"  
+                };  
+            }  
         }  
     } catch (error) {  
+        console.error('Process payment error:', error);  
         return {  
             return_code: 2,  
             return_message: "Server Error",  
@@ -179,15 +201,14 @@ export async function processPayment(
             sub_return_message: error instanceof Error ? error.message : 'Unknown error occurred'  
         };  
     }  
-}  
+}
 
 // Helper function to route to specific payment portal  
 async function processPaymentByPortal(  
     portalName: string,  
     email: string,  
     lsDocumentNo: string,  
-    amount: string,  
-    timeRequest: string 
+    amount: string
 ): Promise<PaymentResponse> {  
     switch (portalName.toLowerCase()) {  
         case 'zalopay':  
@@ -197,15 +218,22 @@ async function processPaymentByPortal(
             const mm = String(today.getMonth() + 1).padStart(2, '0');  
             const dd = String(today.getDate()).padStart(2, '0');  
             const dateFormat = `${yy}${mm}${dd}`;  
- 
-             // Format app_trans_id according to ZaloPay requirements  
-            const app_trans_id = `${dateFormat}_${timeRequest}_${lsDocumentNo}`;
-            return createZalopayOrder({  
+
+            const uniqueString = generateUniqueString();
+
+            // Format app_trans_id according to ZaloPay requirements  
+            const app_trans_id = `${dateFormat}_${uniqueString}_${lsDocumentNo}`;
+            const zaloResponse = await createZalopayOrder({  
                 app_trans_id,  
                 app_user: email,  
                 amount,  
                 description: `Payment for order #${app_trans_id}`  
             });
+
+            return {  
+                ...zaloResponse,  
+                payPortalOrder: app_trans_id  
+            };
         default:  
             throw new Error(`Unsupported payment portal: ${portalName}`);  
     }  
@@ -234,34 +262,34 @@ export async function processCallback(
     }  
 
     const portalConfig = PAYMENT_PORTALS[portal as PaymentPortal];  
-    
-    // Extract transaction info  
-    const transactionInfo = portalConfig.extractTransactionInfo(data);  
+    const payPortalTransInfo = portalConfig.extractTransactionInfo(data);  
 
-    // Get transaction from database  
-    const transaction = await getTransactionsByDocNo(transactionInfo.documentNo);  
-    if (!transaction) {  
-        throw new Error(`Transaction not found: ${transactionInfo.documentNo}`);  
+    const payPortalTrans = await getPayPortalTransByDocNo(payPortalTransInfo.documentNo);  
+    if (!payPortalTrans) {  
+        throw new Error(`Transaction not found: ${payPortalTransInfo.documentNo}`);  
     }  
 
-    // Update transaction  
-    await updateTransaction({  
-        documentId: transaction.$id,  
-        data: {  
-            status: transactionInfo.status,  
-            provider_trans_id: transactionInfo.providerTransId,  
-            payment_time: transactionInfo.paymentTime,  
-            error_message: transactionInfo.errorMessage,  
+    const updateSuccess = await safeUpdatePayPortalTrans(  
+        payPortalTrans.$id,  
+        {  
+            status: payPortalTransInfo.status,  
+            provider_trans_id: payPortalTransInfo.providerTransId,  
+            payment_time: payPortalTransInfo.paymentTime,  
+            error_message: payPortalTransInfo.errorMessage,  
             raw_callback: JSON.stringify(data)  
         }  
-    });  
+    );  
+
+    if (!updateSuccess) {  
+        throw new Error(`Failed to update payPortalTrans: ${payPortalTrans.$id}`);  
+    }  
 
     return {  
-        success: transactionInfo.status === 'success',  
-        transactionId: transaction.$id,  
-        documentNo: transactionInfo.documentNo  
+        success: payPortalTransInfo.status === 'success',  
+        payPortalTransId: payPortalTrans.$id,  
+        documentNo: payPortalTransInfo.documentNo  
     };  
-}  
+} 
 
 export async function formatCallbackResponse(  
     portal: string,   

@@ -4,7 +4,7 @@ import { encryptHmacSHA256 } from "../utils";
 import { getEndpointUrl, isSandboxMode, ZALO_ERROR_MESSAGES, zaloConfig, ZaloEndpoint, ZaloPayResponse, zaloValidators } from "../zalo.config";
 
 function generateMac(data: (string | number)[]): string { 
-    console.log('zalopay.actions-generateMac-data:',data.join('|'));
+    //console.log('zalopay.actions-generateMac-data:',data.join('|'));
     return encryptHmacSHA256(data.join('|'), zaloConfig.key1).toString();  
 }
 

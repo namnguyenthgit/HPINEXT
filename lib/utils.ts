@@ -211,3 +211,24 @@ export const authFormSchema = (type: string) => z.object({
   email: z.string().email(),
   password: z.string().min(8),
 })
+
+export function generateUniqueString(length?: number): string {  
+  // Default length is 5 if not provided  
+  const requestedLength = length || 5;  
+  
+  // Validate length  
+  if (requestedLength < 1 || requestedLength > 32) {  
+      throw new Error('Length must be between 1 and 32 characters');  
+  }  
+
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';  
+  let result = '';  
+  
+  // Generate random string of requested length  
+  for (let i = 0; i < requestedLength; i++) {  
+      const randomIndex = Math.floor(Math.random() * characters.length);  
+      result += characters.charAt(randomIndex);  
+  }  
+  
+  return result;  
+}  

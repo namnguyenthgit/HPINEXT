@@ -13,7 +13,7 @@ import { parseStringify } from "../utils";
 
 import { getBanks, getBank } from "./user.actions";
 import { plaidClient } from "../plaid";
-import { getTransactionsByBankId } from "./transaction.actions";
+import { getTransactionsByBankId } from "./payportaltrans.actions";
 import { AxiosError } from "axios";
 
 // Get multiple bank accounts

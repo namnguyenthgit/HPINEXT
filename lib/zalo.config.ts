@@ -2,7 +2,7 @@
 const ENVIRONMENTS = {  
     sandbox: {  
         BASE_URL: 'https://sb-openapi.zalopay.vn/v2',  
-        APP_ID: process.env.ZALOPAY_SANDBOX_APP_ID || '4068',  
+        APP_ID: process.env.ZALOPAY_SANDBOX_APP_ID || 4068,  
         KEY1: process.env.ZALOPAY_SANDBOX_KEY1 || "81Zbv2d38uBNpk5YvrnKgKnZsMrhk5yb",  
         KEY2: process.env.ZALOPAY_SANDBOX_KEY2 || "eMHsakCkq3Tr4c0T6Znf7eHncAO50ttD",   
     },  

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'; 
-import { createTransaction, getTransactionsByDocNo, updateTransaction } from '@/lib/actions/transaction.actions';
+import { createTransaction, getTransactionsByDocNo, updateTransaction } from '@/lib/actions/payportaltrans.actions';
 import { encryptHmacSHA256 } from '@/lib/utils';
 import { zaloConfig } from '@/lib/zalo.config';
 
