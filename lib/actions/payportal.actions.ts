@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
 import { PAYMENT_PORTALS, isValidPortal, PaymentPortal } from '../appconfig';
 import { createPayPortalTrans, deletePayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString } from '../utils';
-import { CallbackResult, ZaloPayCallbackData } from '@/types';
+import { ZaloPayCallbackData, ZalopayCallbackResult } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -271,7 +271,7 @@ export async function verifyCallback(
 export async function processCallback(  
     portal: string,   
     data: ZaloPayCallbackData  
-): Promise<CallbackResult> {  
+): Promise<ZalopayCallbackResult> {  
     if (!isValidPortal(portal)) {  
         throw new Error(`Unsupported payment portal: ${portal}`);  
     }  
@@ -288,10 +288,10 @@ export async function processCallback(
         payPortalTrans.$id,  
         {  
             status: payPortalTransInfo.status,  
-            provider_trans_id: payPortalTransInfo.providerTransId,  
-            payment_time: payPortalTransInfo.paymentTime,  
-            error_message: payPortalTransInfo.errorMessage,  
-            raw_callback: JSON.stringify(data)  
+            callbackProviderTransId: payPortalTransInfo.providerTransId,  
+            callbackPaymentTime: payPortalTransInfo.paymentTime,  
+            callbackErrorMessage: payPortalTransInfo.errorMessage,  
+            rawCallback: JSON.stringify(data)  
         }  
     );  
 
@@ -308,7 +308,7 @@ export async function processCallback(
 
 export async function formatCallbackResponse(  
     portal: string,   
-    result: CallbackResult  
+    result: ZalopayCallbackResult  
 ): Promise<NextResponse> {  
     switch (portal) {  
         case 'zalopay':  

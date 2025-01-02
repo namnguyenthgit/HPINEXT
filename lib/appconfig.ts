@@ -1,4 +1,4 @@
-import { CallbackData, ParsedZaloPayData, RawZaloPayCallback, TransactionInfo, ZaloPayCallbackData } from "@/types";
+import { ParsedZaloPayData, RawZaloPayCallback, TransactionInfo, ZaloPayCallbackData } from "@/types";
 import { verifyHmacSHA256 } from "./utils";
 import { zaloConfig } from "./zalo.config";
 
@@ -37,7 +37,7 @@ function isZaloPayCallbackData(data: unknown): data is ZaloPayCallbackData {
 export const PAYMENT_PORTALS = {  
     zalopay: {  
         key: zaloConfig.isSandbox ? zaloConfig.key1 : process.env.ZALOPAY_KEY2!,  
-        verifyCallback: (rawData: CallbackData): boolean => {  
+        verifyCallback: (rawData: ZaloPayCallbackData): boolean => {  
             try {  
                 let dataToVerify: ZaloPayCallbackData;  
                 let macToVerify: string;  
@@ -75,7 +75,7 @@ export const PAYMENT_PORTALS = {
                 return false;  
             }  
         },  
-        extractTransactionInfo: (data: CallbackData): TransactionInfo => {  
+        extractTransactionInfo: (data: ZaloPayCallbackData): TransactionInfo => {  
             try {  
                 let processedData: ZaloPayCallbackData;  
 
