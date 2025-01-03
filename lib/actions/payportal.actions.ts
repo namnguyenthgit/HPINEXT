@@ -4,10 +4,10 @@
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
 import { ZaloPayResponse } from "../zalo.config";
 import { NextResponse } from 'next/server';
-import { PAYMENT_PORTALS, isValidPortal, PaymentPortal } from '../appconfig';
+import { PAYMENT_PORTALS, isValidPortal, PaymentPortal, appConfig} from '../appconfig';
 import { createPayPortalTrans, deletePayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString } from '../utils';
-import { ZaloPayCallbackData, ZalopayCallbackResult } from '@/types';
+import { lsApiDocReturn, ZaloPayCallbackData, ZalopayCallbackResult } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -20,6 +20,31 @@ export interface PaymentRequest {
 interface PaymentResponse extends ZaloPayResponse {  
     payPortalOrder?: string;  
     attempt?: string;  
+}
+
+export async function fetchLsDocuments(type: string, params: string): Promise<lsApiDocReturn> {  
+    try {  
+        const endpoint = `${appConfig.baseurl}/api/lsretail/getdata/${type}?value=${encodeURIComponent(params)}`;
+        console.log(`payportal.action, fetchLsDocuments endpoint: "${endpoint}"`);
+        const response = await fetch(endpoint, {  
+            method: 'GET',  
+        });  
+
+        if (!response.ok) {  
+            throw new Error(`Failed to fetch data: ${response.statusText}`);  
+        }  
+
+        const data: lsApiDocReturn = await response.json();  
+        
+        if (!data.success) {  
+            throw new Error(data.message || 'Failed to fetch data');  
+        }  
+
+        return data;  
+    } catch (error) {  
+        console.error('Error fetching data:', error);  
+        throw error;  
+    }  
 }
 
 // Helper function to check existing ZaloPay payment  

@@ -16,9 +16,9 @@ export async function POST(request: NextRequest, context: Props) {
         const isTestMode = portal.toLowerCase().includes('test');
 
         // Log incoming callback
-        console.log(`Received ${request} context:`, context);
-        console.log(`Received ${request} callback:`, request);
-        console.log(`Received ${portal} callback:`, data);  
+        // console.log(`Received ${request} context:`, context);
+        // console.log(`Received ${request} callback:`, request);
+        // console.log(`Received ${portal} callback:`, data);  
 
         if (isTestMode){
             // Get all headers  
@@ -26,22 +26,31 @@ export async function POST(request: NextRequest, context: Props) {
             request.headers.forEach((value, key) => {  
                 headers[key] = value;  
             });
-
              // Get URL and query parameters  
             const url = request.url;  
             const searchParams = Object.fromEntries(request.nextUrl.searchParams); 
+            // const respond_test = {   
+            //     message: `${portal} test mode - showing full request details`,  
+            //     request: {  
+            //         method: request.method,  
+            //         url,  
+            //         headers,  
+            //         queryParams: searchParams,  
+            //         body: data,  
+            //         timestamp: new Date().toISOString(),
+            //     }  
+            // }
+            const respond_test = {
+                "code": "00",
+                "message": "Success",
+                "data": "00020101021226530010vn.zalopay01062716560203001031811080493409344191938620010A00000072701320006970454011899ZP24351O007990160208QRIBFTTA52047399530370454061000005802VN63041E66",
+                "url": null,
+                "checksum": "",
+                "isDelete": true,
+                "idQrcode": ""
+            }
             return NextResponse.json(  
-                {   
-                    message: `${portal} test mode - showing full request details`,  
-                    request: {  
-                        method: request.method,  
-                        url,  
-                        headers,  
-                        queryParams: searchParams,  
-                        body: data,  
-                        timestamp: new Date().toISOString(),
-                    }  
-                },  
+                respond_test,  
                 { status: 200 }  
             );
 

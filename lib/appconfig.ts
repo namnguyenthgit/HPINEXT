@@ -5,10 +5,12 @@ import { zaloConfig } from "./zalo.config";
 export const appConfig = {
     title: 'HPI-Next',
     description: 'Hoang Phuc International management system',
-    icon: "/icons/logo.svg"
+    icon: "/icons/logo.svg",
+    baseurl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    lsretail_baseurl: "https://www.ninunick.vn/",
+    lsretail_basetoken: "hoangphuc@SZYYufR8CNxvXm5obclbYA=="
     //others
 }
-
 function isRecord(value: unknown): value is Record<string, unknown> {  
     return typeof value === 'object' && value !== null;  
 }

@@ -503,3 +503,15 @@ export interface TestResponse {
 export interface ErrorResponse {  
   error: string;  
 }
+
+//lsretail types
+//api
+export interface lsApiDocReturn {  
+  success: boolean;  
+  message?: string;  
+  data?: {
+    Receipt_no?: string[];  
+    // Add other possible data structures
+  };
+  error?: string; 
+}

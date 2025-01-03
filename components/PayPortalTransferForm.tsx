@@ -1,7 +1,7 @@
 // components/forms/PayPortalTransferForm.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -23,7 +23,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { processPayment } from "@/lib/actions/payportal.actions";
+import {
+  fetchLsDocuments,
+  processPayment,
+} from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
 import { useRouter } from "next/navigation";
 
@@ -41,11 +44,11 @@ const PAY_PORTALS = [
 ];
 
 // Mock document numbers - replace with actual data
-const DOCUMENT_NUMBERS = [
-  "000000P015000047084",
-  "000000P015000047085",
-  "000000P015000047086",
-];
+// const DOCUMENT_NUMBERS = [
+//   "000000P015000047084",
+//   "000000P015000047085",
+//   "000000P015000047086",
+// ];
 
 interface PayPortalTransferFormProps {
   email: string;
@@ -63,6 +66,9 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
     type: "success" | "error" | "warning" | null;
     message: string | null;
   }>({ type: null, message: null });
+  const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -98,6 +104,31 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
       }, 1000);
     }
   };
+
+  // Function to fetch document details when a document number is entered/selected
+  useEffect(() => {
+    const loadDocumentNumbers = async () => {
+      try {
+        setIsLoadingDocuments(true);
+        setDocumentError(null);
+        const response = await fetchLsDocuments("postrans", "2148");
+        if (response.success && response.data && response.data.Receipt_no) {
+          setDocumentNumbers(response.data.Receipt_no);
+        }
+      } catch (error) {
+        setDocumentError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load document numbers"
+        );
+      } finally {
+        setIsLoadingDocuments(false);
+      }
+    };
+
+    loadDocumentNumbers();
+  }, []);
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       setIsLoading(true);
@@ -174,7 +205,8 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
           )}
         />
 
-        <FormField
+        {/*DOCUMENTLIST by mockdata*/}
+        {/* <FormField
           control={form.control}
           name="lsDocumentNo"
           render={({ field }) => (
@@ -197,6 +229,57 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
                         {docNo}
                       </SelectItem>
                     ))}
+                  </div>
+                </SelectContent>
+              </Select>
+              <FormMessage className="text-red-500" />
+            </FormItem>
+          )}
+        /> */}
+
+        <FormField
+          control={form.control}
+          name="lsDocumentNo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Document Number</FormLabel>
+              <Select
+                disabled={isLoading || isLoadingDocuments}
+                onValueChange={field.onChange}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        isLoadingDocuments
+                          ? "Loading documents..."
+                          : "Select document number"
+                      }
+                    />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <div className="bg-white">
+                    {isLoadingDocuments ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
+                      </SelectItem>
+                    ) : documentError ? (
+                      <SelectItem value="error" disabled>
+                        {documentError}
+                      </SelectItem>
+                    ) : documentNumbers.length === 0 ? (
+                      <SelectItem value="empty" disabled>
+                        No documents available
+                      </SelectItem>
+                    ) : (
+                      documentNumbers.map((docNo) => (
+                        <SelectItem key={docNo} value={docNo}>
+                          {docNo}
+                        </SelectItem>
+                      ))
+                    )}
                   </div>
                 </SelectContent>
               </Select>
