@@ -153,7 +153,7 @@ export async function GET(
         }  
 
         return NextResponse.json(  
-            { message: `Test endpoint for ${portal} callback` },  
+            { message: `${portal} callback is running!` },  
             { status: 200 }  
         );  
 
