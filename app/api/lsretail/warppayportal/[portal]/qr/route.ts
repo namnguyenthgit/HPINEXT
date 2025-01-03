@@ -15,7 +15,9 @@ export async function POST(request: NextRequest, context: Props) {
         const data = await request.json();  
         const isTestMode = portal.toLowerCase().includes('test');
 
-        // Log incoming callback  
+        // Log incoming callback
+        console.log(`Received ${request} context:`, context);
+        console.log(`Received ${request} callback:`, request);
         console.log(`Received ${portal} callback:`, data);  
 
         if (isTestMode){
@@ -74,61 +76,61 @@ export async function POST(request: NextRequest, context: Props) {
     }  
 }  
 
-export async function GET(request: NextRequest, context: Props) {  
-    try {  
-        // Validate and get portal parameter asynchronously
-        const params = await context.params;  
-        const portal = params.portal;
+// export async function GET(request: NextRequest, context: Props) {  
+//     try {  
+//         // Validate and get portal parameter asynchronously
+//         const params = await context.params;  
+//         const portal = params.portal;
 
-        // Get all headers  
-        const headers: Record<string, string> = {};  
-        request.headers.forEach((value, key) => {  
-            headers[key] = value;  
-        });  
+//         // Get all headers  
+//         const headers: Record<string, string> = {};  
+//         request.headers.forEach((value, key) => {  
+//             headers[key] = value;  
+//         });  
         
-        // Get URL and query parameters  
-        const url = request.url;  
-        const searchParams = Object.fromEntries(request.nextUrl.searchParams);
+//         // Get URL and query parameters  
+//         const url = request.url;  
+//         const searchParams = Object.fromEntries(request.nextUrl.searchParams);
 
-        // Get request body  
-        let bodyData = null;  
-        const clonedRequest = request.clone();  
-        try {  
-             // First get the raw text  
-            const rawBody = await clonedRequest.text();  
-            console.log('Raw body:', rawBody);  
+//         // Get request body  
+//         let bodyData = null;  
+//         const clonedRequest = request.clone();  
+//         try {  
+//              // First get the raw text  
+//             const rawBody = await clonedRequest.text();  
+//             console.log('Raw body:', rawBody);  
 
-            // Only try to parse if we have content  
-            if (rawBody && rawBody.trim() !== '') {  
-                try {  
-                    bodyData = JSON.parse(rawBody);  
-                    console.log('Parsed body:', bodyData);  
-                } catch (parseError) {  
-                    console.log('JSON parse error:', parseError);  
-                    bodyData = rawBody; // Keep raw text if parsing fails  
-                }  
-            }  
-        } catch (e) {  
-             console.log('Error reading body:', e);  
-        }
+//             // Only try to parse if we have content  
+//             if (rawBody && rawBody.trim() !== '') {  
+//                 try {  
+//                     bodyData = JSON.parse(rawBody);  
+//                     console.log('Parsed body:', bodyData);  
+//                 } catch (parseError) {  
+//                     console.log('JSON parse error:', parseError);  
+//                     bodyData = rawBody; // Keep raw text if parsing fails  
+//                 }  
+//             }  
+//         } catch (e) {  
+//              console.log('Error reading body:', e);  
+//         }
 
-        return NextResponse.json(  
-            {   
-                message: `${portal} for lsretail api is running`,  
-                request: {  
-                    method: request.method,  
-                    url,  
-                    headers,  
-                    queryParams: searchParams,
-                    body: bodyData
-                }  
-            },  
-            { status: 200 }  
-        );  
-    } catch (error) {  
-        return NextResponse.json(  
-            { error: error instanceof Error ? error.message : "Invalid request" },  
-            { status: 400 }  
-        );  
-    }  
-}
+//         return NextResponse.json(  
+//             {   
+//                 message: `${portal} for lsretail api is running`,  
+//                 request: {  
+//                     method: request.method,  
+//                     url,  
+//                     headers,  
+//                     queryParams: searchParams,
+//                     body: bodyData
+//                 }  
+//             },  
+//             { status: 200 }  
+//         );  
+//     } catch (error) {  
+//         return NextResponse.json(  
+//             { error: error instanceof Error ? error.message : "Invalid request" },  
+//             { status: 400 }  
+//         );  
+//     }  
+// }
