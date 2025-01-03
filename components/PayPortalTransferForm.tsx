@@ -69,6 +69,11 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
   const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -127,7 +132,7 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
     };
 
     loadDocumentNumbers();
-  }, []);
+  }, [isMounted]);
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {

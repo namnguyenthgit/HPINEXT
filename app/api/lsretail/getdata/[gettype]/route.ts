@@ -43,12 +43,18 @@ export async function GET(request: NextRequest, context: Props) {
                 );  
         }  
 
-        const response = await fetch(  
-            `${appConfig.lsretail_baseurl}/${apiEndpoint}${queryParams}`,  
+        const url = new URL(  
+            `${apiEndpoint}${queryParams}`,  
+            appConfig.lsretail_baseurl.replace(/\/$/, '')  
+        ).toString();
+
+        const response = await fetch(url,  
             {  
                 method: 'GET',  
                 headers: {  
-                    'Authorization': appConfig.lsretail_basetoken,  
+                    'Authorization': appConfig.lsretail_basetoken,
+                    'Accept': 'application/json',  
+                    'Content-Type': 'application/json',
                 }  
             }  
         );  
@@ -57,11 +63,20 @@ export async function GET(request: NextRequest, context: Props) {
             throw new Error(`API error: ${response.statusText}`);  
         }  
 
+        if (!response.ok) {  
+            const errorMessage = `API error: ${response.status} ${response.statusText}`;  
+            console.error(errorMessage);  
+            return NextResponse.json({  
+                success: false,  
+                message: errorMessage  
+            }, { status: response.status });  
+        }
+
         const data = await response.json();  
         return NextResponse.json({  
             success: true,  
             data: data  
-        });  
+        });
 
     } catch (error) {  
         console.error(`Error in ${context.params.gettype} API:`, error);  

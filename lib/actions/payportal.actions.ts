@@ -23,8 +23,9 @@ interface PaymentResponse extends ZaloPayResponse {
 }
 
 export async function fetchLsDocuments(type: string, params: string): Promise<lsApiDocReturn> {  
-    try {  
-        const endpoint = `${appConfig.baseurl}/api/lsretail/getdata/${type}?value=${encodeURIComponent(params)}`;
+    try {
+        const baseurl = appConfig.baseurl.replace(/\/$/, '');
+        const endpoint = `${baseurl}/api/lsretail/getdata/${type}?value=${encodeURIComponent(params)}`;
         console.log(`payportal.action, fetchLsDocuments endpoint: "${endpoint}"`);
         const response = await fetch(endpoint, {  
             method: 'GET',  
