@@ -10,20 +10,6 @@ export const appConfig = {
     //others
 } as const;
 
-export function getLSRetailConfig() {  
-    const baseurl = process.env.LSRETAIL_BASE_URL;  
-    const token = process.env.LSRETAIL_TOKEN;  
-
-    if (!baseurl || !token) {  
-        throw new Error('Missing required LS Retail configuration');  
-    }  
-
-    return {  
-        baseurl,
-        token  
-    };  
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {  
     return typeof value === 'object' && value !== null;  
 }

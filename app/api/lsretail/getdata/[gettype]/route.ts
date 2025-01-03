@@ -1,5 +1,4 @@
-// app/api/lsretail/getdata/[gettype]/route.ts  
-import { appConfig, getLSRetailConfig } from "@/lib/appconfig";
+// app/api/lsretail/getdata/[gettype]/route.ts
 import { NextRequest, NextResponse } from "next/server"; 
 
 type Props = {  
@@ -8,22 +7,11 @@ type Props = {
     }  
 }
 
+const LSRETAIL_BASE_URL = process.env.LSRETAIL_BASE_URL;
+const LSRETAIL_TOKEN =  process.env.LSRETAIL_TOKEN;
+
 export async function GET(request: NextRequest, context: Props) {  
     try {
-        // Get LS Retail configuration  
-        let lsRetailConfig;  
-        try {  
-            lsRetailConfig = getLSRetailConfig();  
-        } catch (error) {  
-            return NextResponse.json(  
-                {   
-                    success: false,   
-                    message: 'LS Retail configuration is not properly set up. Please check your environment variables.'   
-                },  
-                { status: 503 }  
-            );  
-        }
-
         const params = await context.params;
         const gettype = await params.gettype;
         const searchParams = request.nextUrl.searchParams;
@@ -59,14 +47,14 @@ export async function GET(request: NextRequest, context: Props) {
                 );  
         }  
 
-        const baseUrl = lsRetailConfig.baseurl.trim().replace(/\/$/, '');
+        const baseUrl = LSRETAIL_BASE_URL;
         const url = new URL(`${apiEndpoint}${queryParams}`, baseUrl).toString();
         
         const response = await fetch(url,  
             {  
                 method: 'GET',  
                 headers: {  
-                    'Authorization': lsRetailConfig.token,
+                    'Authorization': `${LSRETAIL_TOKEN}`,
                     'Accept': 'application/json',  
                     'Content-Type': 'application/json',
                 }  
