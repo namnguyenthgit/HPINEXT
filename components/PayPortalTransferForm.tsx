@@ -1,7 +1,6 @@
-// components/forms/PayPortalTransferForm.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -52,6 +51,7 @@ const PAY_PORTALS = [
 
 interface PayPortalTransferFormProps {
   email: string;
+  storeNo: string;
 }
 
 interface ZaloPaySuccessResponse extends ZaloPayResponse {
@@ -59,7 +59,7 @@ interface ZaloPaySuccessResponse extends ZaloPayResponse {
   zp_trans_token?: string;
 }
 
-const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
+const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<{
@@ -110,29 +110,38 @@ const PayPortalTransferForm = ({ email }: PayPortalTransferFormProps) => {
     }
   };
 
-  // Function to fetch document details when a document number is entered/selected
-  useEffect(() => {
-    const loadDocumentNumbers = async () => {
-      try {
-        setIsLoadingDocuments(true);
-        setDocumentError(null);
-        const response = await fetchLsDocuments("postrans", "2148");
-        if (response.success && response.data && response.data.Receipt_no) {
-          setDocumentNumbers(response.data.Receipt_no);
-        }
-      } catch (error) {
-        setDocumentError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load document numbers"
-        );
-      } finally {
-        setIsLoadingDocuments(false);
-      }
-    };
+  const fetchDocuments = async (storeNo: string) => {  
+    const response = await fetchLsDocuments("postrans", storeNo);  
+    if (!response.success || !response.data || !response.data.Receipt_no) {  
+      throw new Error("Failed to fetch documents");  
+    }  
+    return response.data.Receipt_no;  
+  };
 
-    loadDocumentNumbers();
-  }, [isMounted]);
+  const loadDocumentNumbers = useCallback(async () => {  
+    if (!storeNo) return;  
+  
+    try {  
+      setIsLoadingDocuments(true);  
+      setDocumentError(null);  
+      const receiptNumbers = await fetchDocuments(storeNo);  
+      setDocumentNumbers(receiptNumbers);  
+    } catch (error) {  
+      setDocumentError(  
+        error instanceof Error  
+          ? error.message  
+          : "Failed to load document numbers"  
+      );  
+    } finally {  
+      setIsLoadingDocuments(false);  
+    }  
+  }, [storeNo]);
+
+  useEffect(() => {  
+    if (isMounted) {  
+      loadDocumentNumbers();  
+    }  
+  }, [isMounted, loadDocumentNumbers]); 
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {

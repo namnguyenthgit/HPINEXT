@@ -1,5 +1,5 @@
 // app/api/lsretail/getdata/[gettype]/route.ts  
-import { appConfig } from "@/lib/appconfig";
+import { appConfig, getLSRetailConfig } from "@/lib/appconfig";
 import { NextRequest, NextResponse } from "next/server"; 
 
 type Props = {  
@@ -9,7 +9,21 @@ type Props = {
 }
 
 export async function GET(request: NextRequest, context: Props) {  
-    try {  
+    try {
+        // Get LS Retail configuration  
+        let lsRetailConfig;  
+        try {  
+            lsRetailConfig = getLSRetailConfig();  
+        } catch (error) {  
+            return NextResponse.json(  
+                {   
+                    success: false,   
+                    message: 'LS Retail configuration is not properly set up. Please check your environment variables.'   
+                },  
+                { status: 503 }  
+            );  
+        }
+
         const params = await context.params;
         const gettype = await params.gettype;
         const searchParams = request.nextUrl.searchParams;
@@ -18,12 +32,14 @@ export async function GET(request: NextRequest, context: Props) {
         let queryParams = '';  
         const value = searchParams.get('value');
         //console.log('searchParams value:',searchParams);  
+        
         if (!value) {  
             return NextResponse.json(  
                 { success: false, message: 'Value parameter is required' },  
                 { status: 400 }  
             );  
-        }  
+        } 
+        
         queryParams = `?value=${encodeURIComponent(value)}`;
         // Handle different gettype cases  
         switch (gettype) {  
@@ -43,16 +59,14 @@ export async function GET(request: NextRequest, context: Props) {
                 );  
         }  
 
-        const url = new URL(  
-            `${apiEndpoint}${queryParams}`,  
-            appConfig.lsretail_baseurl.replace(/\/$/, '')  
-        ).toString();
-
+        const baseUrl = lsRetailConfig.baseurl.trim().replace(/\/$/, '');
+        const url = new URL(`${apiEndpoint}${queryParams}`, baseUrl).toString();
+        
         const response = await fetch(url,  
             {  
                 method: 'GET',  
                 headers: {  
-                    'Authorization': appConfig.lsretail_basetoken,
+                    'Authorization': lsRetailConfig.token,
                     'Accept': 'application/json',  
                     'Content-Type': 'application/json',
                 }  

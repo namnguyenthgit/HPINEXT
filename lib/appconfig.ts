@@ -6,11 +6,24 @@ export const appConfig = {
     title: 'HPI-Next',
     description: 'Hoang Phuc International management system',
     icon: "/icons/logo.svg",
-    baseurl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-    lsretail_baseurl: "https://www.ninunick.vn/",
-    lsretail_basetoken: "hoangphuc@SZYYufR8CNxvXm5obclbYA=="
+    baseurl: process.env.NEXT_PUBLIC_SITE_URL,
     //others
+} as const;
+
+export function getLSRetailConfig() {  
+    const baseurl = process.env.LSRETAIL_BASE_URL;  
+    const token = process.env.LSRETAIL_TOKEN;  
+
+    if (!baseurl || !token) {  
+        throw new Error('Missing required LS Retail configuration');  
+    }  
+
+    return {  
+        baseurl,
+        token  
+    };  
 }
+
 function isRecord(value: unknown): value is Record<string, unknown> {  
     return typeof value === 'object' && value !== null;  
 }

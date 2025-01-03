@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { error } from "console";
 import { appwriteConfig } from "../appwrite-config";
 import { parseStringify } from "../utils";
+import { getUserInfoProps, signInProps, SignUpParams } from "@/types";
 
 interface SignInUpError {
   code?: number;
@@ -15,7 +16,6 @@ interface SignInUpError {
 
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
-const BANK_COLLECTION_ID = appwriteConfig.bankCollectionId
 
 // Get all users  
 export const getAllUsers = async () => {  
@@ -217,69 +217,5 @@ export const logoutAccount = async () => {
   } catch (error) {
     console.error('Error during logout:', error);
     return null;
-  }
-}
-
-export const createBankAccount = async ({
-  userId,
-  bankId,
-  accountId,
-  accessToken,
-  fundingSourceUrl,
-  shareableId,
-}: createBankAccountProps) => {
-  try {
-    const { database } = await createAdminClient();
-
-    const bankAccount = await database.createDocument(
-      DATABASE_ID!,
-      BANK_COLLECTION_ID!,
-      ID.unique(),
-      {
-        userId,
-        bankId,
-        accountId,
-        accessToken,
-        fundingSourceUrl,
-        shareableId,
-      }
-    );
-
-    return parseStringify(bankAccount);
-  } catch (error) {
-    console.error("Error", error);
-    return null;
-  }
-};
-
-export const getBanks = async ({ userId }: getBanksProps) => {
-  try {
-    const { database } = await createAdminClient();
-    const banks = await database.listDocuments(
-      DATABASE_ID!,
-      BANK_COLLECTION_ID!,
-      [Query.equal('userId',[userId])]
-    )
-    if (!banks) throw error;
-    return parseStringify(banks.documents);
-  } catch (error) {
-    console.error("An error occur while getBanks:", error);
-  }
-}
-
-export const getBank = async ({ documentId }: getBankProps) => {
-  try {
-    const { database } = await createAdminClient();
-    const bank = await database.listDocuments(
-      DATABASE_ID!,
-      BANK_COLLECTION_ID!,
-      [Query.equal('$id',[documentId])]
-    )
-    if (!bank) {
-      return null;
-    }
-    return parseStringify(bank.documents[0]);
-  } catch (error) {
-    console.error("An error occur while getBanks:", error);
   }
 }

@@ -1,7 +1,5 @@
 import HeaderBox from "@/components/HeaderBox";
-import PaymentTransferForm from "@/components/PaymentTransferForm";
 import PayPortalTransferForm from "@/components/PayPortalTransferForm";
-import { getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import React from "react";
 
@@ -26,7 +24,7 @@ const Transfer = async () => {
 
       <section className="size-full pt-5">
         {/* <PaymentTransferForm accounts={accountsData} /> */}
-        <PayPortalTransferForm email={loggedIn.email} />
+        <PayPortalTransferForm email={loggedIn.email} storeNo={loggedIn.storeNo} />
       </section>
     </section>
   );
