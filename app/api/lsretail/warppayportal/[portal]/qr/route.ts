@@ -11,7 +11,10 @@ type Props = {
 type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
 
 function generateChecksum(): string {  
-    return Math.random().toString(16).slice(2).padEnd(32, '0').toUpperCase();  
+    return Array.from(  
+        { length: 32 },   
+        () => Math.floor(Math.random() * 16).toString(16)  
+    ).join('').toUpperCase();  
 }
 
 // Function to validate and map portal names  

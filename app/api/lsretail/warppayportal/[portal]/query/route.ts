@@ -11,7 +11,10 @@ type Props = {
 type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
 
 function generateChecksum(): string {  
-    return Math.random().toString(16).slice(2).padEnd(32, '0').toUpperCase();  
+    return Array.from(  
+        { length: 32 },   
+        () => Math.floor(Math.random() * 16).toString(16)  
+    ).join('').toUpperCase();  
 }
 
 // Function to validate and map portal names  
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest, context: Props) {
                 return NextResponse.json({  
                     code: "01",  
                     message: "Missing required fields",  
-                    checksum: null,
+                    checksum: generateChecksum(),
                 }, { status: 200 });  
             }  
 
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest, context: Props) {
                         billNumber: txnId,
                         txnId: txnId,
                         payDate: null,
-                        qrTrace: null,
+                        qrTrace: paymentResult.zp_trans_id,
                         bankCode: null,
                         debitAmount: String(paymentResult.amount),
                         realAmount: String(paymentResult.amount),
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest, context: Props) {
                     return NextResponse.json({  
                         code: "21",  
                         message: `${paymentResult.return_message} ${paymentResult.sub_return_message}` || "Processing payment query failed",  
-                        checksum: null
+                        checksum: generateChecksum()
                     }, { status: 200 });  
                 }  
             } catch (error) {  
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest, context: Props) {
                 return NextResponse.json({  
                     code: "21",  
                     message: error instanceof Error ? error.message : "Processing payment query failed",  
-                    checksum: null 
+                    checksum: generateChecksum() 
                 }, { status: 500 });  
             }  
         }  
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest, context: Props) {
         return NextResponse.json({  
             code: "21",  
             message: error instanceof Error ? error.message : "Internal server error",  
-            checksum: null 
+            checksum: generateChecksum() 
         }, { status: 500 });  
     }  
 }
