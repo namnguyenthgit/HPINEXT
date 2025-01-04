@@ -11,6 +11,8 @@ interface ExtendedUser extends User {
   storeNo: string;  
 }  
 
+export const dynamic = "force-dynamic";
+
 const Transfer = () => {  
   const [loggedInUser, setLoggedInUser] = useState<ExtendedUser | null>(null);  
   const [isLoading, setIsLoading] = useState(true);  
