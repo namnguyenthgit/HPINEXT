@@ -96,7 +96,6 @@ const HighlightedText = ({ text, highlight }: { text: string; highlight: string 
 };  
 
 const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) => {
-  const router = useRouter();  
   const [isLoading, setIsLoading] = useState(false);  
   const [status, setStatus] = useState<{  
     type: "success" | "error" | "warning" | null;  
@@ -108,6 +107,8 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
   const [documentError, setDocumentError] = useState<string | null>(null);  
   const [searchQuery, setSearchQuery] = useState("");  
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [showManualRedirect, setShowManualRedirect] = useState(false);  
+  const [paymentUrl, setPaymentUrl] = useState('');   
 
   const debouncedSearchQuery = useDebounce(searchQuery);
 
@@ -168,21 +169,26 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
     }  
   };
 
+  // For external URLs, use window.open instead of router.push  
   const handlePaymentRedirect = (url: string) => {  
-    const newWindow = window.open(url, "_blank");  
-    
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {  
-      const link = document.createElement("a");  
-      link.href = url;  
-      link.target = "_blank";  
-      link.rel = "noopener noreferrer";  
-      document.body.appendChild(link);  
-      link.click();  
-      document.body.removeChild(link);  
-
-      setTimeout(() => {  
-        window.location.href = url;  
-      }, 1000);  
+    try {  
+      setPaymentUrl(url); // Store URL for manual redirect  
+      const newWindow = window.open(url, '_blank');  
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {  
+        setShowManualRedirect(true); // Show manual redirect button  
+        setStatus({  
+          type: "warning",  
+          message: "Popup blocked. Please use the manual redirect button below."  
+        });  
+      }  
+    } catch (error) {  
+      console.error('Failed to open payment page:', error);  
+      setShowManualRedirect(true);  
+      setStatus({  
+        type: "warning",  
+        message: "Unable to open payment page automatically. Please use manual redirect."  
+      });  
     }  
   };
 
@@ -190,26 +196,25 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
     try {
       setIsLoading(true);
       setStatus({ type: null, message: null });
+      setShowManualRedirect(false);
+      setPaymentUrl('');
       const result = await processPayment({
         email,
         lsDocumentNo: data.lsDocumentNo,
         amount: data.amount,
         payPortalName: data.payPortalName,
-        channel: 'hpi-next'
+        channel: 'hpinext'
       });
 
       if (result.return_code !== 1) {
         setStatus({
           type: result.return_code === 2 ? "error" : "warning",
-          message: `${result.return_message}${
-            result.sub_return_message ? `: ${result.sub_return_message}` : ""
-          }`,
+          message: `${result.return_message}${result.sub_return_message ? `: ${result.sub_return_message}` : ""}`,
         });
       } else {
         setStatus({
           type: "success",
-          message:
-            "QR Code generated successfully. Please scan to complete payment.",
+          message: `${result.return_message}${result.sub_return_message ? `: ${result.sub_return_message}` : "QR Code generated successfully. Please scan to complete payment."}`,
         });
 
         const payPortalResult = result as ZaloPaySuccessResponse;
@@ -466,6 +471,20 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
               {status.message}
             </p>
           </div>
+        )}
+
+        {showManualRedirect && paymentUrl && (  
+          <div className="mt-4 p-4 border rounded-md bg-yellow-50">  
+            <p className="text-sm text-yellow-700 mb-2">  
+              If the payment page didn't open automatically, please click the button below:  
+            </p>  
+            <Button  
+              onClick={() => window.open(paymentUrl, '_blank')}  
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"  
+            >  
+              Open Payment Page  
+            </Button>  
+          </div>  
         )}
 
         <Button

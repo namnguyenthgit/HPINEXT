@@ -211,7 +211,7 @@ declare interface AuthFormProps {
 
 declare interface BankDropdownProps {
   accounts: Account[];
-  setValue?: UseFormSetValue<any>;
+  setValue?: UseFormSetValue<unknown>;
   otherStyles?: string;
 }
 
@@ -346,6 +346,8 @@ declare interface CreatePayPortalTransProps {
   amount: string;
   lsDocumentNo: string;
   payPortalOrder: string;
+  payPortalPaymentUrl: string;
+  payPortalQRCode: string;
 }
 
 interface UpdatePayPortalTransProps {  

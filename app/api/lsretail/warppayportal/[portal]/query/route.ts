@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";  
-import { processPayment } from "@/lib/actions/payportal.actions";  
+import { queryPayment } from "@/lib/actions/payportal.actions";  
 
 type Props = {  
     params: {  
@@ -57,18 +57,14 @@ export async function POST(request: NextRequest, context: Props) {
             }  
             return NextResponse.json(respond_test, { status: 200 });  
         } else {  
-           const { amount, billNumber, merchantName } = data;  
+           const { txnId } = data;  
 
            // Validate required fields  
-           if (!amount || !billNumber || !merchantName) {  
+           if (!txnId ) {  
                 return NextResponse.json({  
-                    code: "21",  
+                    code: "01",  
                     message: "Missing required fields",  
-                    data: null,  
-                    url: null,  
-                    checksum: null,  
-                    isDelete: false,  
-                    idQrcode: null  
+                    checksum: null,
                 }, { status: 400 });  
             }  
 
@@ -77,33 +73,22 @@ export async function POST(request: NextRequest, context: Props) {
                 const validPortalName = validatePortalName(portal);  
 
                 // Call processPayment with validated portal name  
-                const paymentResult = await processPayment({  
-                    email: merchantName,   
-                    amount: amount.toString(),  
-                    lsDocumentNo: billNumber,  
-                    payPortalName: validPortalName,  
-                    channel: "lsretail"   
+                const paymentResult = await queryPayment({  
+                    documentNo: txnId,
+                    portalName: validPortalName
                 });  
 
                 if (paymentResult.return_code === 1) {  
                     return NextResponse.json({  
                         code: "00",  
-                        message: "Success",  
-                        data: paymentResult.qr_code,  
-                        url: null,  
-                        checksum: null,  
-                        isDelete: true,  
-                        idQrcode: null  
+                        message: `${portal} Payment sucessful`,  
+                        ...paymentResult 
                     }, { status: 200 });  
                 } else {  
                     return NextResponse.json({  
                         code: "21",  
                         message: paymentResult.return_message || "Processing failed",  
-                        data: null,  
-                        url: null,  
-                        checksum: null,  
-                        isDelete: false,  
-                        idQrcode: null  
+                        checksum: null
                     }, { status: 400 });  
                 }  
             } catch (error) {  
@@ -111,11 +96,7 @@ export async function POST(request: NextRequest, context: Props) {
                 return NextResponse.json({  
                     code: "21",  
                     message: error instanceof Error ? error.message : "Processing failed",  
-                    data: null,  
-                    url: null,  
-                    checksum: null,  
-                    isDelete: false,  
-                    idQrcode: null  
+                    checksum: null 
                 }, { status: 500 });  
             }  
         }  
@@ -124,11 +105,7 @@ export async function POST(request: NextRequest, context: Props) {
         return NextResponse.json({  
             code: "21",  
             message: error instanceof Error ? error.message : "Internal server error",  
-            data: null,  
-            url: null,  
-            checksum: null,  
-            isDelete: false,  
-            idQrcode: null  
+            checksum: null 
         }, { status: 500 });  
     }  
 }
