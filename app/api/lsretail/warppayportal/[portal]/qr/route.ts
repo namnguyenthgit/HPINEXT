@@ -104,7 +104,7 @@ export async function POST(request: NextRequest, context: Props) {
                         checksum: null,  
                         isDelete: false,  
                         idQrcode: null  
-                    }, { status: 400 });  
+                    }, { status: 200 });  
                 }  
             } catch (error) {  
                 console.error('Payment processing error:', error);  
