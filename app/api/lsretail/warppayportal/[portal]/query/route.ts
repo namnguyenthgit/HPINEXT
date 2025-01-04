@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, context: Props) {
                     code: "01",  
                     message: "Missing required fields",  
                     checksum: null,
-                }, { status: 400 });  
+                }, { status: 200 });  
             }  
 
             try {  
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest, context: Props) {
                         code: "21",  
                         message: paymentResult.return_message || "Processing failed",  
                         checksum: null
-                    }, { status: 400 });  
+                    }, { status: 200 });  
                 }  
             } catch (error) {  
                 console.error('Payment processing error:', error);  
