@@ -10,6 +10,14 @@ export const appConfig = {
     //others
 } as const;
 
+
+export const lsretailConfig = {
+    title: 'LSRetail',
+    description: 'Hoang Phuc International LS Retail',
+    baseurl: process.env.LSRETAIL_BASE_URL,
+    token: process.env.LSRETAIL_TOKEN,
+} as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {  
     return typeof value === 'object' && value !== null;  
 }

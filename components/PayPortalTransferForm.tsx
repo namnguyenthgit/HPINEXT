@@ -22,12 +22,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  fetchLsDocuments,
-  processPayment,
-} from "@/lib/actions/payportal.actions";
+import { processPayment } from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
 import { useRouter } from "next/navigation";
+import { getLSRetailDocuments } from "@/lib/actions/lsretail.action";
 
 const formSchema = z.object({
   payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
@@ -111,12 +109,12 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
   };
 
   const fetchDocuments = async (storeNo: string) => {  
-    const response = await fetchLsDocuments("postrans", storeNo);  
+    const response = await getLSRetailDocuments(storeNo);  
     if (!response.success || !response.data || !response.data.Receipt_no) {  
-      throw new Error("Failed to fetch documents");  
+        throw new Error(response.message || "Failed to fetch documents");  
     }  
     return response.data.Receipt_no;  
-  };
+}; 
 
   const loadDocumentNumbers = useCallback(async () => {  
     if (!storeNo) return;  
