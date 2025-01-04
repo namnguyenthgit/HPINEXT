@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 
 import {
   Form,
@@ -26,6 +26,8 @@ import { processPayment } from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
 import { useRouter } from "next/navigation";
 import { getLSRetailDocuments } from "@/lib/actions/lsretail.action";
+import { ScrollArea } from "./ui/scroll-area";
+import { Input } from "./ui/input";
 
 const formSchema = z.object({
   payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
@@ -57,21 +59,57 @@ interface ZaloPaySuccessResponse extends ZaloPayResponse {
   zp_trans_token?: string;
 }
 
-const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) => {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState<{
-    type: "success" | "error" | "warning" | null;
-    message: string | null;
-  }>({ type: null, message: null });
-  const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
-  const [documentError, setDocumentError] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
+// Debounce hook  
+function useDebounce<T>(value: T, delay: number = 300): T {  
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);  
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  useEffect(() => {  
+    const timer = setTimeout(() => {  
+      setDebouncedValue(value);  
+    }, delay);  
+
+    return () => {  
+      clearTimeout(timer);  
+    };  
+  }, [value, delay]);  
+
+  return debouncedValue;  
+}
+
+// Highlighted text component  
+const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {  
+  if (!highlight.trim()) return <>{text}</>;  
+  
+  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));  
+  
+  return (  
+    <>  
+      {parts.map((part: string, i: number) => (  
+        part.toLowerCase() === highlight.toLowerCase() ? (  
+          <span key={i} className="bg-yellow-100 font-medium">{part}</span>  
+        ) : (  
+          part  
+        )  
+      ))}  
+    </>  
+  );  
+};  
+
+const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) => {
+  const router = useRouter();  
+  const [isLoading, setIsLoading] = useState(false);  
+  const [status, setStatus] = useState<{  
+    type: "success" | "error" | "warning" | null;  
+    message: string | null;  
+  }>({ type: null, message: null });  
+  
+  const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);  
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);  
+  const [documentError, setDocumentError] = useState<string | null>(null);  
+  const [searchQuery, setSearchQuery] = useState("");  
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+
+  const debouncedSearchQuery = useDebounce(searchQuery);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,64 +120,71 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
     },
   });
 
-  const handlePaymentRedirect = (url: string) => {
-    // Method 1: Try window.open first
-    const newWindow = window.open(url, "_blank");
-
-    // If popup was blocked or failed
-    if (
-      !newWindow ||
-      newWindow.closed ||
-      typeof newWindow.closed === "undefined"
-    ) {
-      // Method 2: Create and click a temporary link
-      const link = document.createElement("a");
-      link.href = url;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      // Method 3: If all else fails, redirect in same window
-      setTimeout(() => {
-        window.location.href = url;
-      }, 1000);
-    }
-  };
-
-  const fetchDocuments = async (storeNo: string) => {  
-    const response = await getLSRetailDocuments(storeNo);  
-    if (!response.success || !response.data || !response.data.Receipt_no) {  
-        throw new Error(response.message || "Failed to fetch documents");  
-    }  
-    return response.data.Receipt_no;  
-}; 
-
-  const loadDocumentNumbers = useCallback(async () => {  
+  const fetchDocuments = useCallback(async () => {  
     if (!storeNo) return;  
   
     try {  
       setIsLoadingDocuments(true);  
       setDocumentError(null);  
-      const receiptNumbers = await fetchDocuments(storeNo);  
-      setDocumentNumbers(receiptNumbers);  
+      const response = await getLSRetailDocuments(storeNo);  
+      
+      // Type guard to ensure response has the correct shape  
+      if (!response.success || !response.data || !Array.isArray(response.data.Receipt_no)) {  
+        throw new Error(response.message || "Failed to fetch documents");  
+      }  
+      
+      setDocumentNumbers(response.data.Receipt_no);  
     } catch (error) {  
       setDocumentError(  
-        error instanceof Error  
-          ? error.message  
-          : "Failed to load document numbers"  
+        error instanceof Error ? error.message : "Failed to load document numbers"  
       );  
+      // Initialize empty array on error to prevent undefined  
+      setDocumentNumbers([]);  
     } finally {  
       setIsLoadingDocuments(false);  
     }  
   }, [storeNo]);
+  
+  // Filter documents based on search query  
+  const filteredDocuments = useMemo(() => {  
+    if (!debouncedSearchQuery.trim()) return documentNumbers;  
+    
+    return documentNumbers.filter((docNo: string) =>   
+      docNo.toLowerCase().includes(debouncedSearchQuery.toLowerCase())  
+    );  
+  }, [documentNumbers, debouncedSearchQuery]);
 
-  useEffect(() => {  
-    if (isMounted) {  
-      loadDocumentNumbers();  
+  const handleSelectOpen = useCallback((open: boolean) => {  
+    setIsSelectOpen(open);  
+    if (open) {  // Remove the documentNumbers.length === 0 condition  
+      void fetchDocuments();   
     }  
-  }, [isMounted, loadDocumentNumbers]); 
+  }, [fetchDocuments]);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {  
+    if (e.key === 'Enter' && filteredDocuments.length === 1) {  
+      form.setValue('lsDocumentNo', filteredDocuments[0]);  
+      setIsSelectOpen(false);  
+    }  
+  };
+
+  const handlePaymentRedirect = (url: string) => {  
+    const newWindow = window.open(url, "_blank");  
+    
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {  
+      const link = document.createElement("a");  
+      link.href = url;  
+      link.target = "_blank";  
+      link.rel = "noopener noreferrer";  
+      document.body.appendChild(link);  
+      link.click();  
+      document.body.removeChild(link);  
+
+      setTimeout(() => {  
+        window.location.href = url;  
+      }, 1000);  
+    }  
+  };
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
@@ -249,55 +294,74 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
           )}
         /> */}
 
-        <FormField
-          control={form.control}
-          name="lsDocumentNo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Document Number</FormLabel>
-              <Select
-                disabled={isLoading || isLoadingDocuments}
-                onValueChange={field.onChange}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        isLoadingDocuments
-                          ? "Loading documents..."
-                          : "Select document number"
-                      }
-                    />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <div className="bg-white">
-                    {isLoadingDocuments ? (
-                      <SelectItem value="loading" disabled>
-                        Loading...
-                      </SelectItem>
-                    ) : documentError ? (
-                      <SelectItem value="error" disabled>
-                        {documentError}
-                      </SelectItem>
-                    ) : documentNumbers.length === 0 ? (
-                      <SelectItem value="empty" disabled>
-                        No documents available
-                      </SelectItem>
-                    ) : (
-                      documentNumbers.map((docNo) => (
-                        <SelectItem key={docNo} value={docNo}>
-                          {docNo}
-                        </SelectItem>
-                      ))
-                    )}
-                  </div>
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-red-500" />
-            </FormItem>
-          )}
+        <FormField  
+          control={form.control}  
+          name="lsDocumentNo"  
+          render={({ field }) => (  
+            <FormItem>  
+              <FormLabel>Document Number</FormLabel>  
+              <Select  
+                disabled={isLoading}  
+                onValueChange={field.onChange}  
+                value={field.value}  
+                open={isSelectOpen}  
+                onOpenChange={handleSelectOpen}  
+              >  
+                <FormControl>  
+                  <SelectTrigger>  
+                    <SelectValue placeholder="Select document number" />  
+                  </SelectTrigger>  
+                </FormControl>  
+                <SelectContent>  
+                  <div className="bg-white">  
+                    {/* Search Input */}  
+                    <div className="sticky top-0 p-2 bg-white border-b">  
+                      <div className="relative">  
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />  
+                        <Input  
+                          placeholder="Search documents..."  
+                          value={searchQuery}  
+                          onChange={(e) => setSearchQuery(e.target.value)}  
+                          onKeyDown={handleSearchKeyDown}  
+                          className="pl-8 h-9"  
+                        />  
+                      </div>  
+                    </div>  
+
+                    {/* Results Area */}  
+                    <ScrollArea className="max-h-[300px] overflow-auto">  
+                      {isLoadingDocuments ? (  
+                        <div className="flex items-center justify-center p-4 space-x-2">  
+                          <Loader2 className="w-4 h-4 animate-spin" />  
+                          <span>Loading documents...</span>  
+                        </div>  
+                      ) : documentError ? (  
+                        <div className="p-4 text-sm text-red-500 text-center">  
+                          {documentError}  
+                        </div>  
+                      ) : filteredDocuments.length === 0 ? (  
+                        <div className="p-4 text-sm text-gray-500 text-center">  
+                          {documentNumbers.length === 0  
+                            ? "No documents available"  
+                            : "No matching documents found"}  
+                        </div>  
+                      ) : (  
+                        filteredDocuments.map((docNo) => (  
+                          <SelectItem key={docNo} value={docNo}>  
+                            <HighlightedText   
+                              text={docNo}   
+                              highlight={searchQuery}  
+                            />  
+                          </SelectItem>  
+                        ))  
+                      )}  
+                    </ScrollArea>  
+                  </div>  
+                </SelectContent>  
+              </Select>  
+              <FormMessage className="text-red-500" />  
+            </FormItem>  
+          )}  
         />
 
         <FormField
