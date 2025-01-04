@@ -99,22 +99,26 @@ export async function POST(
 
         // Parse request data  
         const rawData = await request.json();  
-        console.log(`Received ${portal} callback:`, JSON.stringify(rawData, null, 2));  
+        console.log(`Received ${portal} callback:`, rawData);  
 
         try {  
-            // Validate and transform the data  
+            // Validate and transform the data
+            console.log('validating callback');
             const validatedData = validateCallbackData(rawData);  
 
             // Verify callback  
             const isValid = await verifyCallback(portal, validatedData);  
-            if (!isValid) {  
+            if (!isValid) {
+                console.log('callback is validated');
                 return createErrorResponse(`Invalid ${portal} callback data signature`);  
             }  
 
             // Process callback  
+            console.log('processing callback');
             const result = await processCallback(portal, validatedData);  
 
-            // Return portal-specific response  
+            // Return portal-specific response
+            console.log('returning callback');
             return formatCallbackResponse(portal, result);  
 
         } catch (processError) {  
