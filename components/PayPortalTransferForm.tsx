@@ -30,14 +30,14 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 
 const formSchema = z.object({
-  payPortalName: z.enum(["Zalopay", "OCB pay", "Galaxy Pay"]),
+  payPortalName: z.enum(["zalopay", "vnpay", "ocbpay","galaxypay"]),
   lsDocumentNo: z.string().min(1, "Document number is required"),
   amount: z.string().min(1, "Amount is required"),
 });
 
 const PAY_PORTALS = [
   // { name: "VNPay", value: "VNPay" },
-  { name: "Zalopay", value: "Zalopay" },
+  { name: "Zalopay", value: "zalopay" },
   // { name: "OCB pay", value: "OCB pay" },
   // { name: "Galaxy Pay", value: "Galaxy Pay" },
 ];
@@ -195,6 +195,7 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
         lsDocumentNo: data.lsDocumentNo,
         amount: data.amount,
         payPortalName: data.payPortalName,
+        channel: 'hpi-next'
       });
 
       if (result.return_code !== 1) {

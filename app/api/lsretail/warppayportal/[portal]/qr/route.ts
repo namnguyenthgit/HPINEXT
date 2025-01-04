@@ -1,145 +1,134 @@
 import { NextRequest, NextResponse } from "next/server";  
-import { verifyCallback, processCallback, formatCallbackResponse } from "@/lib/actions/payportal.actions";  
+import { warpPayment } from "@/lib/actions/payportal.actions";  
 
 type Props = {  
     params: {  
         portal: string  
     }  
-}
+}  
 
-export async function POST(request: NextRequest, context: Props) {  
-    try {  
-        // Validate and get portal parameter asynchronously
-        const params = await context.params;
-        const portal = params.portal; 
-        const data = await request.json();  
-        const isTestMode = portal.toLowerCase().includes('test');
+// Type for valid payment portals  
+type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
 
-        // Log incoming callback
-        // console.log(`Received ${request} context:`, context);
-        // console.log(`Received ${request} callback:`, request);
-        // console.log(`Received ${portal} callback:`, data);  
-
-        if (isTestMode){
-            // Get all headers  
-            const headers: Record<string, string> = {};  
-            request.headers.forEach((value, key) => {  
-                headers[key] = value;  
-            });
-             // Get URL and query parameters  
-            const url = request.url;  
-            const searchParams = Object.fromEntries(request.nextUrl.searchParams); 
-            // const respond_test = {   
-            //     message: `${portal} test mode - showing full request details`,  
-            //     request: {  
-            //         method: request.method,  
-            //         url,  
-            //         headers,  
-            //         queryParams: searchParams,  
-            //         body: data,  
-            //         timestamp: new Date().toISOString(),
-            //     }  
-            // }
-            const respond_test = {
-                "code": "00",
-                "message": "Success",
-                "data": "00020101021226530010vn.zalopay01062716560203001031811080493409344191938620010A00000072701320006970454011899ZP24351O007990160208QRIBFTTA52047399530370454061000005802VN63041E66",
-                "url": null,
-                "checksum": "",
-                "isDelete": true,
-                "idQrcode": ""
-            }
-            return NextResponse.json(  
-                respond_test,  
-                { status: 200 }  
-            );
-
-        } else {
-            // Verify callback  
-            const isValid = await verifyCallback(portal.toLowerCase(), data);  
-            if (!isValid) {  
-                return NextResponse.json(  
-                    {   
-                        return_code: 2,   
-                        return_message: `Invalid ${portal} callback data`   
-                    },  
-                    { status: 400 }  
-                );  
-            }  
-
-            // Process callback  
-            const result = await processCallback(portal.toLowerCase(), data);  
-
-            // Return portal-specific response  
-            return formatCallbackResponse(portal.toLowerCase(), result); 
-        }
-    } catch (error) {  
-        console.error('Callback error:', error);  
-        return NextResponse.json(  
-            {   
-                return_code: 2,   
-                return_message: error instanceof Error ? error.message : "Internal server error"   
-            },  
-            { status: 500 }  
-        );  
+// Function to validate and map portal names  
+function validatePortalName(portal: string): ValidPayPortal {  
+    // Convert to lowercase and remove any test suffix  
+    const normalizedPortal = portal.toLowerCase().replace('test', '');  
+    
+    switch (normalizedPortal) {  
+        case 'vnpay':  
+            return 'vnpay';  
+        case 'zalopay':  
+            return 'zalopay';  
+        case 'ocbpay':  
+        case 'ocb':  
+            return 'ocbpay';  
+        case 'galaxypay':  
+            return 'galaxypay';  
+        default:  
+            throw new Error(`Invalid payment portal: ${portal}`);  
     }  
 }  
 
-// export async function GET(request: NextRequest, context: Props) {  
-//     try {  
-//         // Validate and get portal parameter asynchronously
-//         const params = await context.params;  
-//         const portal = params.portal;
+export async function POST(request: NextRequest, context: Props) {  
+    try {  
+        const params = await context.params;  
+        const portal = params.portal;   
+        const data = await request.json();  
+        const isTestMode = portal.toLowerCase().includes('test');  
 
-//         // Get all headers  
-//         const headers: Record<string, string> = {};  
-//         request.headers.forEach((value, key) => {  
-//             headers[key] = value;  
-//         });  
-        
-//         // Get URL and query parameters  
-//         const url = request.url;  
-//         const searchParams = Object.fromEntries(request.nextUrl.searchParams);
+        if (isTestMode){  
+            const headers: Record<string, string> = {};  
+            request.headers.forEach((value, key) => {  
+                headers[key] = value;  
+            });  
+            const url = request.url;  
+            const searchParams = Object.fromEntries(request.nextUrl.searchParams);   
+            const respond_test = {   
+                message: `${portal} test mode - showing full request details`,  
+                request: {  
+                    method: request.method,  
+                    url,  
+                    headers,  
+                    queryParams: searchParams,  
+                    body: data,  
+                    timestamp: new Date().toISOString(),  
+                }  
+            }  
+            return NextResponse.json(respond_test, { status: 200 });  
+        } else {  
+           const { amount, billNumber, merchantName } = data;  
 
-//         // Get request body  
-//         let bodyData = null;  
-//         const clonedRequest = request.clone();  
-//         try {  
-//              // First get the raw text  
-//             const rawBody = await clonedRequest.text();  
-//             console.log('Raw body:', rawBody);  
+           // Validate required fields  
+           if (!amount || !billNumber || !merchantName) {  
+                return NextResponse.json({  
+                    code: "21",  
+                    message: "Missing required fields",  
+                    data: null,  
+                    url: null,  
+                    checksum: null,  
+                    isDelete: false,  
+                    idQrcode: null  
+                }, { status: 400 });  
+            }  
 
-//             // Only try to parse if we have content  
-//             if (rawBody && rawBody.trim() !== '') {  
-//                 try {  
-//                     bodyData = JSON.parse(rawBody);  
-//                     console.log('Parsed body:', bodyData);  
-//                 } catch (parseError) {  
-//                     console.log('JSON parse error:', parseError);  
-//                     bodyData = rawBody; // Keep raw text if parsing fails  
-//                 }  
-//             }  
-//         } catch (e) {  
-//              console.log('Error reading body:', e);  
-//         }
+            try {  
+                // Validate and get the correct portal name  
+                const validPortalName = validatePortalName(portal);  
 
-//         return NextResponse.json(  
-//             {   
-//                 message: `${portal} for lsretail api is running`,  
-//                 request: {  
-//                     method: request.method,  
-//                     url,  
-//                     headers,  
-//                     queryParams: searchParams,
-//                     body: bodyData
-//                 }  
-//             },  
-//             { status: 200 }  
-//         );  
-//     } catch (error) {  
-//         return NextResponse.json(  
-//             { error: error instanceof Error ? error.message : "Invalid request" },  
-//             { status: 400 }  
-//         );  
-//     }  
-// }
+                // Call processPayment with validated portal name  
+                const paymentResult = await warpPayment({  
+                    email: merchantName,   
+                    amount: amount.toString(),  
+                    lsDocumentNo: billNumber,  
+                    payPortalName: validPortalName,  
+                    channel: "lsretail"   
+                });  
+
+                if (paymentResult.return_code === 1) {  
+                    return NextResponse.json({  
+                        code: "00",  
+                        message: "Success",  
+                        data: paymentResult.qr_code,  
+                        url: null,  
+                        checksum: null,  
+                        isDelete: true,  
+                        idQrcode: null  
+                    }, { status: 200 });  
+                } else {  
+                    return NextResponse.json({  
+                        code: "21",  
+                        message: paymentResult.return_message || "Processing failed",  
+                        data: null,  
+                        url: null,  
+                        checksum: null,  
+                        isDelete: false,  
+                        idQrcode: null  
+                    }, { status: 400 });  
+                }  
+            } catch (error) {  
+                console.error('Payment processing error:', error);  
+                return NextResponse.json({  
+                    code: "21",  
+                    message: error instanceof Error ? error.message : "Processing failed",  
+                    data: null,  
+                    url: null,  
+                    checksum: null,  
+                    isDelete: false,  
+                    idQrcode: null  
+                }, { status: 500 });  
+            }  
+        }  
+    } catch (error) {  
+        console.error('Route error:', error);  
+        return NextResponse.json({  
+            code: "21",  
+            message: error instanceof Error ? error.message : "Internal server error",  
+            data: null,  
+            url: null,  
+            checksum: null,  
+            isDelete: false,  
+            idQrcode: null  
+        }, { status: 500 });  
+    }  
+}

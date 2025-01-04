@@ -342,6 +342,7 @@ declare interface ZaloPayResponse {
 declare interface CreatePayPortalTransProps {
   email: string;
   payPortalName: string;
+  channel: string;
   amount: string;
   lsDocumentNo: string;
   payPortalOrder: string;

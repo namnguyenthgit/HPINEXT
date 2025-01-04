@@ -6,7 +6,7 @@ export const appConfig = {
     title: 'HPI-Next',
     description: 'Hoang Phuc International management system',
     icon: "/icons/logo.svg",
-    baseurl: process.env.NEXT_PUBLIC_SITE_URL,
+    baseurl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
     //others
 } as const;
 

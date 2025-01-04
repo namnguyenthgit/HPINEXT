@@ -18,7 +18,6 @@ export const createPayPortalTrans = async (transaction: CreatePayPortalTransProp
       PAYPORTALTRANS_COLLECTION_ID!,
       ID.unique(),
       {
-        channel: 'hpi-next',
         status: 'processing',
         ...transaction
       }
