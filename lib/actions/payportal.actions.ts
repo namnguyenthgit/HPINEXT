@@ -195,7 +195,7 @@ export async function processPayment(
                     if (parseInt(amount) != existingPayment.amount){
                         return {  
                             return_code: 2,  
-                            return_message: "Update Failed",  
+                            return_message: "Update payPortalTrans Failed",  
                             sub_return_message: `You request generate payment with amount:"${amount}" but existing ${payPortalName} payment is "${existingPayment.amount}"`,  
                             payPortalOrder: existingPayportalTrans.payPortalOrder  
                         };    
@@ -209,7 +209,7 @@ export async function processPayment(
                     if (!updateSuccess) {  
                         return {  
                             return_code: 2,  
-                            return_message: "Update Failed",  
+                            return_message: "Update payPortalTrans Failed",  
                             sub_return_message: `${payPortalName} payment existed but failed to update transaction status`,  
                             payPortalOrder: existingPayportalTrans.payPortalOrder  
                         };  

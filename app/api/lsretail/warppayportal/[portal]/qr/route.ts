@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, context: Props) {
                     checksum: null,  
                     isDelete: false,  
                     idQrcode: null  
-                }, { status: 400 });  
+                }, { status: 200 });  
             }  
 
             try {  
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest, context: Props) {
                 } else {  
                     return NextResponse.json({  
                         code: "21",  
-                        message: paymentResult.return_message || "Processing failed",  
+                        message: `${paymentResult.return_message} ${paymentResult.sub_return_message}`|| "Processing QR failed",  
                         data: null,  
                         url: null,  
                         checksum: null,  

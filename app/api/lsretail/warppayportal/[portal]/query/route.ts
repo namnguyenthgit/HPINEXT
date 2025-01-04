@@ -97,7 +97,7 @@ export async function POST(request: NextRequest, context: Props) {
                 } else {  
                     return NextResponse.json({  
                         code: "21",  
-                        message: paymentResult.return_message || "Processing failed",  
+                        message: `${paymentResult.return_message} ${paymentResult.sub_return_message}` || "Processing payment query failed",  
                         checksum: null
                     }, { status: 200 });  
                 }  
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest, context: Props) {
                 console.error('Payment processing error:', error);  
                 return NextResponse.json({  
                     code: "21",  
-                    message: error instanceof Error ? error.message : "Processing failed",  
+                    message: error instanceof Error ? error.message : "Processing payment query failed",  
                     checksum: null 
                 }, { status: 500 });  
             }  
