@@ -10,6 +10,10 @@ type Props = {
 // Type for valid payment portals  
 type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
 
+function generateChecksum(): string {  
+    return Math.random().toString(16).slice(2).padEnd(32, '0').toUpperCase();  
+}
+
 // Function to validate and map portal names  
 function validatePortalName(portal: string): ValidPayPortal {  
     // Convert to lowercase and remove any test suffix  
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest, context: Props) {
                         bankCode: null,
                         debitAmount: String(paymentResult.amount),
                         realAmount: String(paymentResult.amount),
-                        checkSum: "DD53EDEC17464AEBA2277B0AC52A1B02" 
+                        checkSum: generateChecksum() 
                     }, { status: 200 });  
                 } else {  
                     return NextResponse.json({  

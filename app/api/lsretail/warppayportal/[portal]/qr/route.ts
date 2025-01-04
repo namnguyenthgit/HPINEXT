@@ -10,6 +10,10 @@ type Props = {
 // Type for valid payment portals  
 type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
 
+function generateChecksum(): string {  
+    return Math.random().toString(16).slice(2).padEnd(32, '0').toUpperCase();  
+}
+
 // Function to validate and map portal names  
 function validatePortalName(portal: string): ValidPayPortal {  
     // Convert to lowercase and remove any test suffix  
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest, context: Props) {
                     message: "Missing required fields",  
                     data: null,  
                     url: null,  
-                    checksum: null,  
+                    checksum: generateChecksum(),  
                     isDelete: false,  
                     idQrcode: null  
                 }, { status: 200 });  
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest, context: Props) {
                         message: "Success",  
                         data: paymentResult.qr_code,  
                         url: null,  
-                        checksum: null,  
+                        checksum: generateChecksum(),  
                         isDelete: true,  
                         idQrcode: null  
                     }, { status: 200 });  
@@ -101,7 +105,7 @@ export async function POST(request: NextRequest, context: Props) {
                         message: `${paymentResult.return_message} ${paymentResult.sub_return_message}`|| "Processing QR failed",  
                         data: null,  
                         url: null,  
-                        checksum: null,  
+                        checksum: generateChecksum(),  
                         isDelete: false,  
                         idQrcode: null  
                     }, { status: 200 });  
@@ -113,7 +117,7 @@ export async function POST(request: NextRequest, context: Props) {
                     message: error instanceof Error ? error.message : "Processing failed",  
                     data: null,  
                     url: null,  
-                    checksum: null,  
+                    checksum: generateChecksum(),  
                     isDelete: false,  
                     idQrcode: null  
                 }, { status: 500 });  
@@ -126,7 +130,7 @@ export async function POST(request: NextRequest, context: Props) {
             message: error instanceof Error ? error.message : "Internal server error",  
             data: null,  
             url: null,  
-            checksum: null,  
+            checksum: generateChecksum(),  
             isDelete: false,  
             idQrcode: null  
         }, { status: 500 });  
