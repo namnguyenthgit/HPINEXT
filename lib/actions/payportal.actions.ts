@@ -154,10 +154,7 @@ export async function queryPayment(
 
         // Return payment portal response with additional transaction info  
         return {  
-            ...paymentStatus,  
-            payPortalOrder: existingPayportalTrans.payPortalOrder,  
-            order_url: existingPayportalTrans.payPortalPaymentUrl,  
-            qr_code: existingPayportalTrans.payPortalQRCode  
+            ...paymentStatus,
         };  
 
     } catch (error) {  

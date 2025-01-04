@@ -82,7 +82,17 @@ export async function POST(request: NextRequest, context: Props) {
                     return NextResponse.json({  
                         code: "00",  
                         message: `${portal} Payment sucessful`,  
-                        ...paymentResult 
+                        masterMerchantCode: null,
+                        merchantCode: null,
+                        terminalID: null,
+                        billNumber: txnId,
+                        txnId: txnId,
+                        payDate: null,
+                        qrTrace: null,
+                        bankCode: null,
+                        debitAmount: String(paymentResult.amount),
+                        realAmount: String(paymentResult.amount),
+                        checkSum: "DD53EDEC17464AEBA2277B0AC52A1B02" 
                     }, { status: 200 });  
                 } else {  
                     return NextResponse.json({  
