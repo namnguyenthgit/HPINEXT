@@ -101,7 +101,7 @@ export async function POST(
         // Parse request data  
         const rawData = await request.json(); 
         console.log(`Received ${portal} rawcallback:`, rawData);  
-        const callbackData = JSON.parse(rawData.data);
+        const callbackData = JSON.parse(rawData);
         console.log(`Parsed ${portal} rawcallback:`, callbackData);
         try {  
             // Validate and transform the data
