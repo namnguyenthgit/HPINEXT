@@ -32,7 +32,8 @@ const ENDPOINTS = {
 // Main configuration object  
 export const zaloConfig = {  
     app_id: env.APP_ID,  
-    key1: env.KEY1,  
+    key1: env.KEY1,
+    key2: env.KEY2,  
     callback_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/payportal/callback/zalopay`,  
     expire_duration_seconds: 900,
     bank_code: 'zalopayapp',

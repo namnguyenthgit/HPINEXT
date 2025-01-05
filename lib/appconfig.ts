@@ -45,7 +45,7 @@ function isZaloPayCallbackData(data: unknown): data is ZaloPayCallbackData {
 
 export const PAYMENT_PORTALS = {  
     zalopay: {  
-        key: zaloConfig.isSandbox ? zaloConfig.key1 : process.env.ZALOPAY_KEY2!,  
+        key: zaloConfig.key2!,  
         verifyCallback: (rawData: ZaloPayCallbackData): boolean => {  
             try {  
                 let dataToVerify: ZaloPayCallbackData;  
@@ -74,9 +74,7 @@ export const PAYMENT_PORTALS = {
                     .map(([key, value]) => `${key}=${value}`)  
                     .join('|');  
                 
-                const verificationKey = zaloConfig.isSandbox ?   
-                    zaloConfig.key1 :   
-                    process.env.ZALOPAY_KEY2!;  
+                const verificationKey = zaloConfig.key2;  
                 
                 return verifyHmacSHA256(dataStr, verificationKey, macToVerify);  
             } catch (error) {  

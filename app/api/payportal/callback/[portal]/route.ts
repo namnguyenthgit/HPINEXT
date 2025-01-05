@@ -9,7 +9,7 @@ import type {
     RawZaloPayCallback,   
     ZaloPayCallbackData,  
     ParsedZaloPayData   
-} from "@/types";  
+} from "@/types";
 
 interface RouteContext {  
     params: {  
@@ -91,25 +91,27 @@ export async function POST(
     context: RouteContext  
 ): Promise<NextResponse> {  
     try {  
-        const portal = context.params.portal.toLowerCase();  
+        const params = await context.params;
+        const portal = params.portal;  
 
         if (!isValidPortal(portal)) {  
             return createErrorResponse(`Invalid payment portal: ${portal}`);  
         }  
 
         // Parse request data  
-        const rawData = await request.json();  
-        console.log(`Received ${portal} callback:`, rawData);  
-
+        const rawData = await request.json(); 
+        console.log(`Received ${portal} rawcallback:`, rawData);  
+        const callbackData = JSON.parse(rawData.data);
+        console.log(`Parsed ${portal} rawcallback:`, callbackData);
         try {  
             // Validate and transform the data
             console.log('validating callback');
-            const validatedData = validateCallbackData(rawData);  
+            const validatedData = validateCallbackData(callbackData);  
 
             // Verify callback  
             const isValid = await verifyCallback(portal, validatedData);  
             if (!isValid) {
-                console.log('callback is validated');
+                console.log('callback is invalid');
                 return createErrorResponse(`Invalid ${portal} callback data signature`);  
             }  
 

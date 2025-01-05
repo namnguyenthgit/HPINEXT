@@ -436,33 +436,7 @@ interface TransactionInfo {
     errorMessage?: string;  
 }  
 
-// Update ZaloPayCallbackData to match actual ZaloPay fields  
-interface ZaloPayCallbackData {  
-  app_id?: number;  
-  app_trans_id: string;  
-  app_time: number;  
-  app_user: string;  
-  amount: number;  
-  embed_data: string;  
-  item: string;  
-  zp_trans_id: string | number;  
-  server_time: number;  
-  channel: number;  
-  merchant_user_id: string;  
-  zp_user_id?: string;  
-  user_fee_amount: number;  
-  discount_amount: number;  
-  status?: number;  
-  error_message?: string;  
-  mac?: string;  
-} 
-
-interface ZalopayCallbackResult {  
-    success: boolean;  
-    payPortalTransId: string;  
-    documentNo: string;  
-}
-
+// Update ZaloPayCallbackData to match actual ZaloPay fields
 interface RawZaloPayCallback {  
   data: string;  
   mac: string;  
@@ -493,6 +467,12 @@ export interface ZaloPayCallbackData extends ParsedZaloPayData {
 }
 
 export type ZaloCallbackData = RawZaloPayCallback | ZaloPayCallbackData;
+
+interface ZalopayCallbackResult {  
+  success: boolean;  
+  payPortalTransId: string;  
+  documentNo: string;  
+}
 
 export interface PayPortalPaymentResponse {  
   return_code: number;  
