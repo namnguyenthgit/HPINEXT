@@ -427,23 +427,8 @@ declare interface createZalopayOrderParams {
   item?: string;
 }
 
-//zalocalback
-interface TransactionInfo {  
-    documentNo: string;  
-    status: 'success' | 'failed';  
-    providerTransId: string;  
-    paymentTime: string;  
-    errorMessage?: string;  
-}  
-
-// Update ZaloPayCallbackData to match actual ZaloPay fields
-interface RawZaloPayCallback {  
-  data: string;  
-  mac: string;  
-  type: number;  
-} 
-
-interface ParsedZaloPayData {  
+//payPortalCallback
+interface ZaloPayData {  
   app_id: number;  
   app_trans_id: string;  
   app_time: number;  
@@ -451,29 +436,41 @@ interface ParsedZaloPayData {
   amount: number;  
   embed_data: string;  
   item: string;  
-  zp_trans_id: number | string;  
+  zp_trans_id: number;  
   server_time: number;  
   channel: number;  
   merchant_user_id: string;  
-  zp_user_id?: string;  
+  zp_user_id: string;  
   user_fee_amount: number;  
   discount_amount: number;  
 }
 
-export interface ZaloPayCallbackData extends ParsedZaloPayData {  
+// Specific ZaloPay callback interface  
+interface ZaloPayCallback extends PayPortalCallbackData {  
+  data: ZaloPayData;  
+  mac: string;  
+  type: number;  
+}
+
+interface RawCallbackData {  
+  data: unknown;  
   mac?: string;  
-  status?: number;  
-  error_message?: string;  
+  type?: number;  
 }
 
-export type ZaloCallbackData = RawZaloPayCallback | ZaloPayCallbackData;
-
-interface ZalopayCallbackResult {  
-  success: boolean;  
-  payPortalTransId: string;  
-  documentNo: string;  
+interface PayPortalCallbackData {
+  data: string | ZaloPayData;
+  [key: string]: unknown;
 }
 
+interface PayPortalCallbackResult {
+  success: boolean;
+  message?: string;
+}
+
+
+
+//lsretail
 export interface PayPortalPaymentResponse {  
   return_code: number;  
   return_message: string;  

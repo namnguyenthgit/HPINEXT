@@ -1,12 +1,12 @@
 'use server'  
 
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
-import { ZaloPayResponse } from "../zalo.config";
+import { zaloConfig, ZaloPayResponse } from "../zalo.config";
 import { NextResponse } from 'next/server';
-import { PAYMENT_PORTALS, isValidPortal, PaymentPortal, appConfig} from '../appconfig';
+import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
-import { generateUniqueString } from '../utils';
-import { lsApiDocReturn, ZaloPayCallbackData, ZalopayCallbackResult } from '@/types';
+import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
+import { lsApiDocReturn, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -386,71 +386,137 @@ async function processPaymentByPortal(
 }
 
 //callback
-// Updated callback handling functions  
-export async function verifyCallback(  
-    portal: string,   
-    data: ZaloPayCallbackData  
-): Promise<boolean> {  
-    if (!isValidPortal(portal)) {  
-        throw new Error(`Unsupported payment portal: ${portal}`);  
-    }  
-    
-    try {  
-        return PAYMENT_PORTALS[portal].verifyCallback(data);  
-    } catch (error) {  
-        console.error('Verification error:', error);  
-        return false;  
-    }  
+export async function validateCallback(
+    portal: string,
+    rawdata:PayPortalCallbackData
+): Promise<boolean> {
+    switch (portal) {
+        case 'zalopay':
+            return verifyHmacSHA256(parseStringify(rawdata.data),zaloConfig.key2,parseStringify(rawdata.mac));
+        default:
+            return false
+    }
 }
 
+// Helper function to check if an object has specific property  
+function hasProperty<K extends string>(  
+    obj: unknown,  
+    prop: K  
+): obj is Record<K, unknown> {  
+    return typeof obj === 'object' &&   
+           obj !== null &&   
+           prop in obj;  
+} 
+
+// Helper function to check if object matches ZaloPayData structure  
+function isZaloPayData(data: unknown): data is ZaloPayData {  
+    if (!data || typeof data !== 'object') return false;  
+    
+    return hasProperty(data, 'app_trans_id') &&  
+           typeof (data as Record<string, unknown>).app_trans_id === 'string' &&  
+           hasProperty(data, 'app_id') &&  
+           typeof (data as Record<string, unknown>).app_id === 'number';  
+    // Add more specific checks as needed  
+}
+
+// Main type guard for ZaloPay callback  
+function isZaloPayCallback(  
+    data: RawCallbackData  
+): data is ZaloPayCallback {  
+    return (  
+        hasProperty(data, 'data') &&  
+        isZaloPayData(data.data) &&  
+        hasProperty(data, 'mac') &&  
+        typeof data.mac === 'string' &&  
+        hasProperty(data, 'type') &&  
+        typeof data.type === 'number'  
+    );  
+} 
+
+export async function parseCallbackData(  
+    portal: string,  
+    rawdata: RawCallbackData  
+): Promise<{ payPortalOrder: string | null }> {  
+    let parsedCallbackData;  
+
+    switch (portal) {  
+        case 'zalopay':  
+            if (isZaloPayCallback(rawdata)) {  
+                parsedCallbackData = {  
+                    payPortalOrder: rawdata.data.app_trans_id  
+                };  
+            } else {  
+                throw new Error('Invalid ZaloPay callback data format');  
+            }  
+            break;  
+        default:  
+            parsedCallbackData = {  
+                payPortalOrder: null
+            };  
+    }  
+
+    return parsedCallbackData;  
+} 
 
 export async function processCallback(  
     portal: string,   
-    data: ZaloPayCallbackData  
-): Promise<ZalopayCallbackResult> {  
-    if (!isValidPortal(portal)) {  
-        throw new Error(`Unsupported payment portal: ${portal}`);  
-    }  
-
-    const portalConfig = PAYMENT_PORTALS[portal as PaymentPortal];  
-    const payPortalTransInfo = portalConfig.extractTransactionInfo(data);  
-
-    const payPortalTrans = await getPayPortalTransByDocNo(payPortalTransInfo.documentNo);  
-    if (!payPortalTrans) {  
-        throw new Error(`Transaction not found: ${payPortalTransInfo.documentNo}`);  
-    }  
-
-    const updateSuccess = await safeUpdatePayPortalTrans(  
-        payPortalTrans.$id,  
-        {  
-            status: payPortalTransInfo.status,  
-            callbackProviderTransId: payPortalTransInfo.providerTransId,  
-            callbackPaymentTime: payPortalTransInfo.paymentTime,  
-            callbackErrorMessage: payPortalTransInfo.errorMessage,  
-            rawCallback: JSON.stringify(data)  
+    data: PayPortalCallbackData  
+): Promise<PayPortalCallbackResult> {  
+    if (!validateCallback(portal, data)) {
+        return {
+            success: false,
+            message: `${portal} Callbackdata is invalid`
+        }
+    }
+    
+    try {  
+        const payPortalTrans = await getPayPortalTransByDocNo(String(data.payPortalOrder));  
+        if (!payPortalTrans) {  
+            return {  
+                success: false,  
+                message: `${portal} order "${data.payPortalOrder}" not found!!!`  
+            };  
         }  
-    );  
 
-    if (!updateSuccess) {  
-        throw new Error(`Failed to update payPortalTrans: ${payPortalTrans.$id}`);  
-    }  
+        const updateSuccess = await safeUpdatePayPortalTrans(  
+            payPortalTrans.$id,  
+            {  
+                status: data.status,  
+                callbackProviderTransId: data.zp_trans_id,  
+                callbackPaymentTime: data.server_time,  
+                callbackErrorMessage: data.error_message,  
+                rawCallback: JSON.stringify(data)  
+            }  
+        );  
 
-    return {  
-        success: payPortalTransInfo.status === 'success',  
-        payPortalTransId: payPortalTrans.$id,  
-        documentNo: payPortalTransInfo.documentNo  
-    };  
+        if (!updateSuccess) {  
+            return {  
+                success: false,  
+                message: `Failed to update payPortalTrans: ${payPortalTrans.$id}`  
+            };  
+        }  
+
+        return {  
+            success: true,  
+            message: 'success'
+        };  
+    } catch (error) {  
+        return {  
+            success: false,  
+            message: error instanceof Error ? error.message : 'Unknown error occurred'  
+        };  
+    }
 } 
 
 export async function formatCallbackResponse(  
     portal: string,   
-    result: ZalopayCallbackResult  
+    result: PayPortalCallbackData  
 ): Promise<NextResponse> {  
     switch (portal) {  
         case 'zalopay':  
             return NextResponse.json({  
                 return_code: result.success ? 1 : 2,  
-                return_message: result.success ? 'success' : 'failed'  
+                return_message: result.success ? "success" : "failed"  
             });  
         
         // Add other portal response formats here  
@@ -458,7 +524,7 @@ export async function formatCallbackResponse(
         default:  
             return NextResponse.json({  
                 success: result.success,  
-                message: result.success ? 'Success' : 'Failed'  
+                message: result.success ? "success" : "failed"  
             });  
     }  
 }  
