@@ -44,7 +44,7 @@ async function fetchLSRetailData<T>(
     } catch (error) {  
         console.error('LS Retail API Error:', error);  
         return {  
-            success: false,  
+            success: false,
             message: error instanceof Error ? error.message : 'Failed to fetch data'  
         };  
     }  
