@@ -7,6 +7,7 @@ import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
 import { lsApiDocReturn, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
+import { Terminal } from 'lucide-react';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -15,6 +16,7 @@ export interface PaymentRequest {
     lsDocumentNo: string;  
     payPortalName: "vnpay" | "zalopay" | "ocbpay" | "galaxypay";
     channel: string;
+    terminalId: string;
 }
 
 interface PaymentQuery {  
@@ -172,9 +174,9 @@ export async function queryPayment(
 export async function processPayment(  
     paymentRequest: PaymentRequest  
 ): Promise<PaymentResponse> {  
-    const { email, amount, lsDocumentNo, payPortalName, channel } = paymentRequest;  
+    const { email, amount, lsDocumentNo, payPortalName, channel, terminalId } = paymentRequest;  
 
-    if (!amount || !email || !lsDocumentNo || !payPortalName || !channel) {  
+    if (!amount || !email || !lsDocumentNo || !payPortalName || !channel || !terminalId) {  
         return {  
             return_code: 2,  
             return_message: "Invalid Request",  
@@ -312,7 +314,8 @@ export async function processPayment(
                 payPortalName,  
                 email,  
                 lsDocumentNo,  
-                amount  
+                amount,
+                terminalId,  
             );
 
             if (result.return_code === 1 && result.payPortalOrder) {
@@ -320,6 +323,7 @@ export async function processPayment(
                     email,  
                     payPortalName,
                     channel,
+                    terminalId,
                     amount,  
                     lsDocumentNo,  
                     payPortalOrder: result.payPortalOrder,
@@ -354,7 +358,8 @@ async function processPaymentByPortal(
     portalName: string,  
     email: string,  
     lsDocumentNo: string,  
-    amount: string
+    amount: string,
+    terminalId: string,
 ): Promise<PaymentResponse> {  
     switch (portalName.toLowerCase()) {  
         case 'zalopay':  
@@ -368,7 +373,7 @@ async function processPaymentByPortal(
             const uniqueString = generateUniqueString();
 
             // Format app_trans_id according to ZaloPay requirements  
-            const app_trans_id = `${dateFormat}_${uniqueString}_${lsDocumentNo}`;
+            const app_trans_id = `${dateFormat}_${terminalId}_${uniqueString}_${lsDocumentNo}`;
             const zaloResponse = await createZalopayOrder({  
                 app_trans_id,  
                 app_user: email,  

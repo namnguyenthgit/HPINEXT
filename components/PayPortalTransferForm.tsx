@@ -24,13 +24,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { processPayment } from "@/lib/actions/payportal.actions";
 import { ZaloPayResponse } from "@/lib/zalo.config";
-import { useRouter } from "next/navigation";
-import { getLSRetailDocuments } from "@/lib/actions/lsretail.action";
+import {
+  getLSRetailDocuments,
+  getLSRetailTransactionLines,
+} from "@/lib/actions/lsretail.action";
 import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 
 const formSchema = z.object({
-  payPortalName: z.enum(["zalopay", "vnpay", "ocbpay","galaxypay"]),
+  payPortalName: z.enum(["zalopay", "vnpay", "ocbpay", "galaxypay"]),
   lsDocumentNo: z.string().min(1, "Document number is required"),
   amount: z.string().min(1, "Amount is required"),
 });
@@ -59,56 +61,67 @@ interface ZaloPaySuccessResponse extends ZaloPayResponse {
   zp_trans_token?: string;
 }
 
-// Debounce hook  
-function useDebounce<T>(value: T, delay: number = 300): T {  
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);  
+// Debounce hook
+function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  useEffect(() => {  
-    const timer = setTimeout(() => {  
-      setDebouncedValue(value);  
-    }, delay);  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-    return () => {  
-      clearTimeout(timer);  
-    };  
-  }, [value, delay]);  
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
 
-  return debouncedValue;  
+  return debouncedValue;
 }
 
-// Highlighted text component  
-const HighlightedText = ({ text, highlight }: { text: string; highlight: string }) => {  
-  if (!highlight.trim()) return <>{text}</>;  
-  
-  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));  
-  
-  return (  
-    <>  
-      {parts.map((part: string, i: number) => (  
-        part.toLowerCase() === highlight.toLowerCase() ? (  
-          <span key={i} className="bg-yellow-100 font-medium">{part}</span>  
-        ) : (  
-          part  
-        )  
-      ))}  
-    </>  
-  );  
-};  
+// Highlighted text component
+const HighlightedText = ({
+  text,
+  highlight,
+}: {
+  text: string;
+  highlight: string;
+}) => {
+  if (!highlight.trim()) return <>{text}</>;
 
-const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) => {
-  const [isLoading, setIsLoading] = useState(false);  
-  const [status, setStatus] = useState<{  
-    type: "success" | "error" | "warning" | null;  
-    message: string | null;  
-  }>({ type: null, message: null });  
-  
-  const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);  
-  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);  
-  const [documentError, setDocumentError] = useState<string | null>(null);  
-  const [searchQuery, setSearchQuery] = useState("");  
+  const parts = text.split(new RegExp(`(${highlight})`, "gi"));
+
+  return (
+    <>
+      {parts.map((part: string, i: number) =>
+        part.toLowerCase() === highlight.toLowerCase() ? (
+          <span key={i} className="bg-yellow-100 font-medium">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+};
+
+const PayPortalTransferForm = ({
+  email,
+  storeNo,
+}: PayPortalTransferFormProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<{
+    type: "success" | "error" | "warning" | null;
+    message: string | null;
+  }>({ type: null, message: null });
+
+  const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
-  const [showManualRedirect, setShowManualRedirect] = useState(false);  
-  const [paymentUrl, setPaymentUrl] = useState('');   
+  const [showManualRedirect, setShowManualRedirect] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState("");
 
   const debouncedSearchQuery = useDebounce(searchQuery);
 
@@ -121,75 +134,91 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
     },
   });
 
-  const fetchDocuments = useCallback(async () => {  
-    if (!storeNo) return;  
-  
-    try {  
-      setIsLoadingDocuments(true);  
-      setDocumentError(null);  
-      const response = await getLSRetailDocuments(storeNo);  
-      
-      // Type guard to ensure response has the correct shape  
-      if (!response.success || !response.data || !Array.isArray(response.data.Receipt_no)) {  
-        throw new Error(response.message || "Failed to fetch documents");  
-      }  
-      
-      setDocumentNumbers(response.data.Receipt_no);  
-    } catch (error) {  
-      setDocumentError(  
-        error instanceof Error ? error.message : "Failed to load document numbers"  
-      );  
-      // Initialize empty array on error to prevent undefined  
-      setDocumentNumbers([]);  
-    } finally {  
-      setIsLoadingDocuments(false);  
-    }  
+  const fetchDocuments = useCallback(async () => {
+    if (!storeNo) return;
+
+    try {
+      setIsLoadingDocuments(true);
+      setDocumentError(null);
+      const response = await getLSRetailDocuments(storeNo);
+
+      // Type guard to ensure response has the correct shape
+      if (
+        !response.success ||
+        !response.data ||
+        !Array.isArray(response.data.Receipt_no)
+      ) {
+        throw new Error(response.message || "Failed to fetch documents");
+      }
+
+      setDocumentNumbers(response.data.Receipt_no);
+    } catch (error) {
+      setDocumentError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load document numbers"
+      );
+      // Initialize empty array on error to prevent undefined
+      setDocumentNumbers([]);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
   }, [storeNo]);
-  
-  // Filter documents based on search query  
-  const filteredDocuments = useMemo(() => {  
-    if (!debouncedSearchQuery.trim()) return documentNumbers;  
-    
-    return documentNumbers.filter((docNo: string) =>   
-      docNo.toLowerCase().includes(debouncedSearchQuery.toLowerCase())  
-    );  
+
+  // Filter documents based on search query
+  const filteredDocuments = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return documentNumbers;
+
+    return documentNumbers.filter((docNo: string) =>
+      docNo.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+    );
   }, [documentNumbers, debouncedSearchQuery]);
 
-  const handleSelectOpen = useCallback((open: boolean) => {  
-    setIsSelectOpen(open);  
-    if (open) {  // Remove the documentNumbers.length === 0 condition  
-      void fetchDocuments();   
-    }  
-  }, [fetchDocuments]);
+  const handleSelectOpen = useCallback(
+    (open: boolean) => {
+      setIsSelectOpen(open);
+      if (open) {
+        // Remove the documentNumbers.length === 0 condition
+        void fetchDocuments();
+      }
+    },
+    [fetchDocuments]
+  );
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {  
-    if (e.key === 'Enter' && filteredDocuments.length === 1) {  
-      form.setValue('lsDocumentNo', filteredDocuments[0]);  
-      setIsSelectOpen(false);  
-    }  
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && filteredDocuments.length === 1) {
+      form.setValue("lsDocumentNo", filteredDocuments[0]);
+      setIsSelectOpen(false);
+    }
   };
 
-  // For external URLs, use window.open instead of router.push  
-  const handlePaymentRedirect = (url: string) => {  
-    try {  
-      setPaymentUrl(url); // Store URL for manual redirect  
-      const newWindow = window.open(url, '_blank');  
-      
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {  
-        setShowManualRedirect(true); // Show manual redirect button  
-        setStatus({  
-          type: "warning",  
-          message: "Popup blocked. Please use the manual redirect button below."  
-        });  
-      }  
-    } catch (error) {  
-      console.error('Failed to open payment page:', error);  
-      setShowManualRedirect(true);  
-      setStatus({  
-        type: "warning",  
-        message: "Unable to open payment page automatically. Please use manual redirect."  
-      });  
-    }  
+  // For external URLs, use window.open instead of router.push
+  const handlePaymentRedirect = (url: string) => {
+    try {
+      setPaymentUrl(url); // Store URL for manual redirect
+      const newWindow = window.open(url, "_blank");
+
+      if (
+        !newWindow ||
+        newWindow.closed ||
+        typeof newWindow.closed === "undefined"
+      ) {
+        setShowManualRedirect(true); // Show manual redirect button
+        setStatus({
+          type: "warning",
+          message:
+            "Popup blocked. Please use the manual redirect button below.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to open payment page:", error);
+      setShowManualRedirect(true);
+      setStatus({
+        type: "warning",
+        message:
+          "Unable to open payment page automatically. Please use manual redirect.",
+      });
+    }
   };
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -197,24 +226,53 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
       setIsLoading(true);
       setStatus({ type: null, message: null });
       setShowManualRedirect(false);
-      setPaymentUrl('');
+      setPaymentUrl("");
+
+      const lsTransactionLineRespond = await getLSRetailTransactionLines(
+        data.lsDocumentNo
+      );
+
+      console.log("Response received:", lsTransactionLineRespond);
+
+      if (
+        !lsTransactionLineRespond.success ||
+        !lsTransactionLineRespond.data ||
+        !Array.isArray(lsTransactionLineRespond.data) ||
+        lsTransactionLineRespond.data.length === 0
+      ) {
+        throw new Error("Failed to fetch transaction details");
+      }
+
+      const terminalId = lsTransactionLineRespond.data[0]?.Store_no || "";
+
+      if (!terminalId) {
+        console.warn("Terminal ID not found in transaction details");
+      }
+
       const result = await processPayment({
         email,
         lsDocumentNo: data.lsDocumentNo,
         amount: data.amount,
         payPortalName: data.payPortalName,
-        channel: 'hpinext'
+        channel: "hpinext",
+        terminalId: terminalId,
       });
 
       if (result.return_code !== 1) {
         setStatus({
           type: result.return_code === 2 ? "error" : "warning",
-          message: `${result.return_message}${result.sub_return_message ? `: ${result.sub_return_message}` : ""}`,
+          message: `${result.return_message}${
+            result.sub_return_message ? `: ${result.sub_return_message}` : ""
+          }`,
         });
       } else {
         setStatus({
           type: "success",
-          message: `${result.return_message}${result.sub_return_message ? `: ${result.sub_return_message}` : "QR Code generated successfully. Please scan to complete payment."}`,
+          message: `${result.return_message}${
+            result.sub_return_message
+              ? `: ${result.sub_return_message}`
+              : "QR Code generated successfully. Please scan to complete payment."
+          }`,
         });
 
         const payPortalResult = result as ZaloPaySuccessResponse;
@@ -300,74 +358,74 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
           )}
         /> */}
 
-        <FormField  
-          control={form.control}  
-          name="lsDocumentNo"  
-          render={({ field }) => (  
-            <FormItem>  
-              <FormLabel>Document Number</FormLabel>  
-              <Select  
-                disabled={isLoading}  
-                onValueChange={field.onChange}  
-                value={field.value}  
-                open={isSelectOpen}  
-                onOpenChange={handleSelectOpen}  
-              >  
-                <FormControl>  
-                  <SelectTrigger>  
-                    <SelectValue placeholder="Select document number" />  
-                  </SelectTrigger>  
-                </FormControl>  
-                <SelectContent>  
-                  <div className="bg-white">  
-                    {/* Search Input */}  
-                    <div className="sticky top-0 p-2 bg-white border-b">  
-                      <div className="relative">  
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />  
-                        <Input  
-                          placeholder="Search documents..."  
-                          value={searchQuery}  
-                          onChange={(e) => setSearchQuery(e.target.value)}  
-                          onKeyDown={handleSearchKeyDown}  
-                          className="pl-8 h-9"  
-                        />  
-                      </div>  
-                    </div>  
+        <FormField
+          control={form.control}
+          name="lsDocumentNo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Document Number</FormLabel>
+              <Select
+                disabled={isLoading}
+                onValueChange={field.onChange}
+                value={field.value}
+                open={isSelectOpen}
+                onOpenChange={handleSelectOpen}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select document number" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <div className="bg-white">
+                    {/* Search Input */}
+                    <div className="sticky top-0 p-2 bg-white border-b">
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search documents..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={handleSearchKeyDown}
+                          className="pl-8 h-9"
+                        />
+                      </div>
+                    </div>
 
-                    {/* Results Area */}  
-                    <ScrollArea className="max-h-[300px] overflow-auto">  
-                      {isLoadingDocuments ? (  
-                        <div className="flex items-center justify-center p-4 space-x-2">  
-                          <Loader2 className="w-4 h-4 animate-spin" />  
-                          <span>Loading documents...</span>  
-                        </div>  
-                      ) : documentError ? (  
-                        <div className="p-4 text-sm text-red-500 text-center">  
-                          {documentError}  
-                        </div>  
-                      ) : filteredDocuments.length === 0 ? (  
-                        <div className="p-4 text-sm text-gray-500 text-center">  
-                          {documentNumbers.length === 0  
-                            ? "No documents available"  
-                            : "No matching documents found"}  
-                        </div>  
-                      ) : (  
-                        filteredDocuments.map((docNo) => (  
-                          <SelectItem key={docNo} value={docNo}>  
-                            <HighlightedText   
-                              text={docNo}   
-                              highlight={searchQuery}  
-                            />  
-                          </SelectItem>  
-                        ))  
-                      )}  
-                    </ScrollArea>  
-                  </div>  
-                </SelectContent>  
-              </Select>  
-              <FormMessage className="text-red-500" />  
-            </FormItem>  
-          )}  
+                    {/* Results Area */}
+                    <ScrollArea className="max-h-[300px] overflow-auto">
+                      {isLoadingDocuments ? (
+                        <div className="flex items-center justify-center p-4 space-x-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Loading documents...</span>
+                        </div>
+                      ) : documentError ? (
+                        <div className="p-4 text-sm text-red-500 text-center">
+                          {documentError}
+                        </div>
+                      ) : filteredDocuments.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500 text-center">
+                          {documentNumbers.length === 0
+                            ? "No documents available"
+                            : "No matching documents found"}
+                        </div>
+                      ) : (
+                        filteredDocuments.map((docNo) => (
+                          <SelectItem key={docNo} value={docNo}>
+                            <HighlightedText
+                              text={docNo}
+                              highlight={searchQuery}
+                            />
+                          </SelectItem>
+                        ))
+                      )}
+                    </ScrollArea>
+                  </div>
+                </SelectContent>
+              </Select>
+              <FormMessage className="text-red-500" />
+            </FormItem>
+          )}
         />
 
         <FormField
@@ -473,18 +531,19 @@ const PayPortalTransferForm = ({ email, storeNo }: PayPortalTransferFormProps) =
           </div>
         )}
 
-        {showManualRedirect && paymentUrl && (  
-          <div className="mt-4 p-4 border rounded-md bg-yellow-50">  
-            <p className="text-sm text-yellow-700 mb-2">  
-              If the payment page didn't open automatically, please click the button below:  
-            </p>  
-            <Button  
-              onClick={() => window.open(paymentUrl, '_blank')}  
-              className="bg-yellow-500 hover:bg-yellow-600 text-white"  
-            >  
-              Open Payment Page  
-            </Button>  
-          </div>  
+        {showManualRedirect && paymentUrl && (
+          <div className="mt-4 p-4 border rounded-md bg-yellow-50">
+            <p className="text-sm text-yellow-700 mb-2">
+              If the payment page didn't open automatically, please click the
+              button below:
+            </p>
+            <Button
+              onClick={() => window.open(paymentUrl, "_blank")}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+            >
+              Open Payment Page
+            </Button>
+          </div>
         )}
 
         <Button

@@ -64,10 +64,10 @@ export async function POST(request: NextRequest, context: Props) {
             }  
             return NextResponse.json(respond_test, { status: 200 });  
         } else {  
-           const { amount, billNumber, merchantName } = data;  
+           const { amount, billNumber, merchantName, terminalId } = data;  
 
            // Validate required fields  
-           if (!amount || !billNumber || !merchantName) {  
+           if (!amount || !billNumber || !merchantName || !terminalId) {  
                 return NextResponse.json({  
                     code: "21",  
                     message: "Missing required fields",  
@@ -89,7 +89,8 @@ export async function POST(request: NextRequest, context: Props) {
                     amount: amount.toString(),  
                     lsDocumentNo: billNumber,  
                     payPortalName: validPortalName,  
-                    channel: "lsretail"   
+                    channel: "lsretail",
+                    terminalId: terminalId
                 });  
 
                 if (paymentResult.return_code === 1) {  

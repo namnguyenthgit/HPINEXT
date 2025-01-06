@@ -343,6 +343,7 @@ declare interface CreatePayPortalTransProps {
   email: string;
   payPortalName: string;
   channel: string;
+  terminalId: string;
   amount: string;
   lsDocumentNo: string;
   payPortalOrder: string;

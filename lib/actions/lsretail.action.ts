@@ -1,19 +1,24 @@
-// lib/actions/lsretail.action.ts  
-
-interface LSRetailResponse<T> {  
+export interface LSRetailResponse<T> {  
     success: boolean;  
-    data?: T;  
     message?: string;  
-}  
+    data?: T;  
+    error?: string;  
+  }  
 
 interface LSRetailDocumentResponse {  
-    Receipt_no: string[];  
+    Receipt_no: string[];
     [key: string]: unknown;  
-}  
+}
+
+export interface LSRetailTransactionLine {  
+    Receipt_no: string;  
+    Store_no: string;  
+    // ... other fields  
+}
 
 interface LSRetailTransactionResponse {  
-    [key: string]: unknown;  
-}  
+    data: LSRetailTransactionLine[];  
+}   
 
 // Base function to fetch data through our Next.js API route  
 async function fetchLSRetailData<T>(  
@@ -25,18 +30,17 @@ async function fetchLSRetailData<T>(
         const response = await fetch(  
             `/api/lsretail/getdata/${gettype}?value=${encodeURIComponent(value)}`  
         );  
-
+        console.log(`fetchLSRetailData-${gettype}:${response}`);
         if (!response.ok) {  
             throw new Error(`API error: ${response.status} ${response.statusText}`);  
         }  
 
-        const result = await response.json();  
-        
+        const result = await response.json();
         if (!result.success) {  
             throw new Error(result.message || 'Failed to fetch data');  
         }  
 
-        return result;  
+        return result;
     } catch (error) {  
         console.error('LS Retail API Error:', error);  
         return {  
