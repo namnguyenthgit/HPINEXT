@@ -282,7 +282,8 @@ export async function processPayment(
                 payPortalName,  
                 email,  
                 lsDocumentNo,  
-                amount  
+                amount,
+                terminalId  
             );  
 
             if (result.return_code === 1) {  
