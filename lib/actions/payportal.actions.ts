@@ -89,8 +89,8 @@ async function safeUpdatePayPortalTrans(documentId: string, data: unknown): Prom
 export async function queryPayment(  
     paymentRequest: PaymentQuery  
 ): Promise<PaymentResponse> {  
-    try {  
-        // Get existing transaction  
+    try {
+        //Try to get existing transaction  
         const existingPayportalTrans = await getPayPortalTransByDocNo(paymentRequest.documentNo);  
 
         if (!existingPayportalTrans) {  
