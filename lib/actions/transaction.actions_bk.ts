@@ -1,9 +1,9 @@
 "use server";
 
 import { ID, Query } from "node-appwrite";
-import { createAdminClient } from "../appwrite";
+import { createAdminClient } from "../appwrite/appwrite.actions";
 import { parseStringify } from "../utils";
-import { appwriteConfig } from "../appwrite-config";
+import { appwriteConfig } from "../appwrite/appwrite-config";
 
 const DATABASE_ID = appwriteConfig.databaseId
 const TRANSACTION_COLLECTION_ID = appwriteConfig.transactionCollectionId

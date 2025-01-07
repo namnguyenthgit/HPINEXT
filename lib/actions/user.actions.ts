@@ -1,10 +1,10 @@
 'use server';
 
 import { ID, Query } from "node-appwrite";
-import { createAdminClient, createSessionClient } from "../appwrite";
+import { createAdminClient, createSessionClient } from "../appwrite/appwrite.actions";
 import { cookies } from "next/headers";
 import { error } from "console";
-import { appwriteConfig } from "../appwrite-config";
+import { appwriteConfig } from "../appwrite/appwrite-config";
 import { parseStringify } from "../utils";
 import { getUserInfoProps, signInProps, SignUpParams } from "@/types";
 

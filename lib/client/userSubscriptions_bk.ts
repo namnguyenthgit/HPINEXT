@@ -2,9 +2,9 @@
 
 "use client";  
 
-import { client } from '@/lib/appwrite-client';  
+import { client } from '@/lib/appwrite/appwrite-client';  
 import { RealtimeResponseEvent } from 'appwrite';  
-import { appwriteConfig } from '@/lib/appwrite-config';  
+import { appwriteConfig } from '@/lib/appwrite/appwrite-config';  
 
 export type User = {  
   $id: string;  

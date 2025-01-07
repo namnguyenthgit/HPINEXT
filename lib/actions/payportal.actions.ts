@@ -1,7 +1,7 @@
 'use server'  
 
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
-import { zaloConfig, ZaloPayResponse } from "../zalo.config";
+import { zaloConfig, ZaloPayResponse } from "../zalo/zalo.config";
 import { NextResponse } from 'next/server';
 import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
@@ -184,8 +184,51 @@ export async function processPayment(
         };  
     }  
 
-    try {  
-        const existingPayportalTrans = await getPayPortalTransByDocNo(lsDocumentNo);  
+    try {
+        let existingPayportalTrans = null;
+        
+        try {
+            existingPayportalTrans = await getPayPortalTransByDocNo(lsDocumentNo);
+        } catch (error) {
+            console.error(`Error "${error}" while fetching PayPortalTrans, system will let generate QR only!`);
+            // If getPayPortalTransByDocNo fails, proceed with new payment processing  
+            const result = await processPaymentByPortal(  
+                payPortalName,  
+                email,  
+                lsDocumentNo,  
+                amount,  
+                terminalId  
+            );  
+
+            if (result.return_code === 1 && result.payPortalOrder) {  
+                try {  
+                    const newTransaction = await createPayPortalTrans({  
+                        email,  
+                        payPortalName,  
+                        channel,  
+                        terminalId,  
+                        amount,  
+                        lsDocumentNo,  
+                        payPortalOrder: result.payPortalOrder,  
+                        payPortalPaymentUrl: String(result.order_url),  
+                        payPortalQRCode: String(result.qr_code),  
+                    });  
+
+                    if (!newTransaction && channel !== 'lsretail') {  
+                        return {  
+                            return_code: 2,  
+                            return_message: "Update Failed",  
+                            sub_return_message: "Failed to update new transaction with payment order"  
+                        };  
+                    }  
+                } catch (createError) {  
+                    // If createPayPortalTrans fails, still return the payment result  
+                    console.error('Error creating PayPortalTrans:', createError);  
+                }  
+            }  
+
+            return result;
+        }
         
         if (existingPayportalTrans && existingPayportalTrans.payPortalOrder) {  
             const existingPayment = await checkExistingZaloPayment(existingPayportalTrans.payPortalOrder);  

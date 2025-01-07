@@ -1,6 +1,6 @@
 "use client";  
 
-import { client } from '@/lib/appwrite-client';  
+import { client } from '@/lib/appwrite/appwrite-client';  
 import { RealtimeResponseEvent } from 'appwrite';
 
 // Generic type T to handle different document types  

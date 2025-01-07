@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { processPayment } from "@/lib/actions/payportal.actions";
-import { ZaloPayResponse } from "@/lib/zalo.config";
+import { ZaloPayResponse } from "@/lib/zalo/zalo.config";
 import {
   getLSRetailDocuments,
   getLSRetailTransactionLines,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptHmacSHA256 } from '@/lib/utils';
-import { zaloConfig } from '@/lib/zalo.config';
+import { zaloConfig } from '@/lib/zalo/zalo.config';
 
 async function createZaloPayOrder(email: string, lsDocumentNo: string, amount: string, timeRequest: string) {  
   const embed_data =  "{}";  
