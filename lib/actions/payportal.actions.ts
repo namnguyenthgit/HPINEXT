@@ -7,7 +7,6 @@ import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
 import { lsApiDocReturn, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
-import { Terminal } from 'lucide-react';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -379,7 +378,7 @@ async function processPaymentByPortal(
                 app_trans_id,  
                 app_user: email,  
                 amount,  
-                description: `Payment for order #${app_trans_id}`  
+                description: `Hoang Phuc International - Payment for order #${app_trans_id}`  
             });
 
             return {  
