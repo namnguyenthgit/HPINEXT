@@ -4,10 +4,22 @@ import { ID, Query } from "node-appwrite";
 import { createAdminClient } from "../appwrite/appwrite.actions";
 import { parseStringify } from "../utils";
 import { appwriteConfig } from "../appwrite/appwrite-config";
-import { CreatePayPortalTransProps, getPayPortalTransByEmailProps, UpdatePayPortalTransProps } from "@/types";
+import { CreatePayPortalTransProps, getPayPortalTransByEmailProps, PayPortalTrans, UpdatePayPortalTransProps } from "@/types";
 
 const DATABASE_ID = appwriteConfig.databaseId
 const PAYPORTALTRANS_COLLECTION_ID = appwriteConfig.payPortalTransCollectionId
+
+export interface appwritePayportalTransResponse {  
+  total: number;  
+  documents: PayPortalTrans[];  
+}
+
+interface appwritePayportalTransError {  
+  message: string;  
+  code: number;  
+  response?: unknown;  
+  type?: string;  
+} 
 
 export const createPayPortalTrans = async (transaction: CreatePayPortalTransProps) => {
   try {
@@ -98,6 +110,43 @@ export const getPayPortalTransByDocNo = async (lsDocumentNo: string) => {
     throw error;
   }
 }
+
+export const getPayPortalTransByStores = async (storeList: string[]): Promise<appwritePayportalTransResponse> => {  
+  try {  
+    const { database } = await createAdminClient();  
+
+    console.log("Original storeList:", storeList);  
+
+    // Ensure we have an array of individual store IDs  
+    const stores: string[] = Array.isArray(storeList)   
+      ? storeList[0].includes(',')  
+        ? storeList[0].split(',').map((s: string) => s.trim())  
+        : storeList  
+      : [storeList];  
+
+    console.log("Processing stores:", stores);  
+
+    const transactions = await database.listDocuments(  
+      DATABASE_ID!,  
+      PAYPORTALTRANS_COLLECTION_ID!,  
+      [  
+        Query.equal('terminalId', stores),  
+        Query.orderDesc('$createdAt'),  
+        Query.limit(100)  
+      ]  
+    );  
+
+    console.log("Query result:", transactions);  
+    return transactions as appwritePayportalTransResponse;  
+  } catch (error: unknown) {  
+    const appwriteError = error as appwritePayportalTransError;  
+    console.error('Error fetching transactions by stores:', appwriteError.message);  
+    if (appwriteError.response) {  
+      console.error('Error details:', appwriteError.response);  
+    }  
+    throw error;
+  }  
+};
 
 export const deletePayPortalTrans = async (documentId: string) => {  
   try {  

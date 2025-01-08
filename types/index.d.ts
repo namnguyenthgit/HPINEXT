@@ -339,6 +339,30 @@ declare interface ZaloPayResponse {
   qr_code: string;  
 }  
 
+
+export interface PayPortalTrans {  
+  $id: string;  
+  $createdAt: string;  
+  $updatedAt: string;  
+  $permissions: string[];  
+  $databaseId: string;  
+  $collectionId: string;  
+  email: string;  
+  payPortalName: string;  
+  channel: string;  
+  status: string;  
+  amount: string;  
+  lsDocumentNo: string;  
+  payPortalOrder: string;  
+  callbackProviderTransId: string | null;  
+  callbackPaymentTime: string | null;  
+  callbackErrorMessage: string;  
+  rawCallback: string | null;  
+  payPortalPaymentUrl: string;  
+  payPortalQRCode: string;  
+  terminalId: string;  
+}
+
 declare interface CreatePayPortalTransProps {
   email: string;
   payPortalName: string;

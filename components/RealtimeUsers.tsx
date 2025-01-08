@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { subscribeToUsers, User } from "@/lib/client/userSubscriptions";
+import { subscribeToUsers, User } from "@/lib/client/appwriteUserSubscriptions";
 
 interface RealtimeUsersProps {
   initialUsers: User[];
