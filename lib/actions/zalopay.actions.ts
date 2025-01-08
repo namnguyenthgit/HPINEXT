@@ -11,9 +11,11 @@ function generateMac(data: (string | number)[]): string {
 
 async function makeZalopayRequest<T = ZaloPayResponse>(endpoint: ZaloEndpoint, data: Record<string, unknown>) : Promise<T> {
     try {
+        
         if (isSandboxMode()) {  
             console.log('zalopay.action-makeZalopayRequest-data:',JSON.stringify(data)) 
         }
+        //console.log('makeZalopayRequest endpoint:',getEndpointUrl(endpoint));
         const response = await fetch(getEndpointUrl(endpoint), {  
             method: 'POST',
             headers: {  
