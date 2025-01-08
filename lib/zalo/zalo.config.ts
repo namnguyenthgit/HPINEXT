@@ -2,13 +2,13 @@
 const ENVIRONMENTS = {  
     sandbox: {  
         BASE_URL: 'https://sb-openapi.zalopay.vn/v2',  
-        APP_ID: process.env.ZALOPAY_SANDBOX_APP_ID!,  
+        APP_ID: parseInt(process.env.ZALOPAY_SANDBOX_APP_ID!),  
         KEY1: process.env.ZALOPAY_SANDBOX_KEY1!,  
         KEY2: process.env.ZALOPAY_SANDBOX_KEY2!,   
     },  
     live: {  
         BASE_URL: 'https://openapi.zalopay.vn/v2/',  
-        APP_ID: process.env.ZALOPAY_APP_ID!,  
+        APP_ID: parseInt(process.env.ZALOPAY_APP_ID!),  
         KEY1: process.env.ZALOPAY_KEY1!,
         KEY2: process.env.ZALOPAY_KEY2!,
     }  
