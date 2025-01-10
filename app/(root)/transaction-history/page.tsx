@@ -4,6 +4,7 @@ import TransactionsTable from "@/components/TransactionsTable";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { formatAmount } from "@/lib/utils";
+import { SearchParamProps } from "@/types";
 import { redirect } from "next/navigation";
 import React from "react";
 

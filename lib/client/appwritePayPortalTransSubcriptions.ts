@@ -1,4 +1,3 @@
-
 "use client";  
 
 import { client } from '@/lib/appwrite/appwrite-client';  

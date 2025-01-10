@@ -5,6 +5,7 @@ import TotalBalanceBox from "@/components/TotalBalanceBox";
 import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
 import { getPayPortalTransByEmail } from "@/lib/actions/payportaltrans.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { SearchParamProps } from "@/types";
 import { redirect } from "next/navigation";
 import React from "react";
 

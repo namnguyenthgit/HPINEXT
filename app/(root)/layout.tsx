@@ -28,7 +28,9 @@ export default async function RootLayout({
             <MobileNav user={loggedIn} />
           </div>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto"> {/* Add this wrapper */}  
+          {children}  
+        </div>
       </div>
     </main>
   );
