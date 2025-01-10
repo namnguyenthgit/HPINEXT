@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";  
 import { processPayment } from "@/lib/actions/payportal.actions";  
+import { parseStringify } from "@/lib/utils";
 
 type Props = {  
     params: {  
@@ -64,10 +65,10 @@ export async function POST(request: NextRequest, context: Props) {
             }  
             return NextResponse.json(respond_test, { status: 200 });  
         } else {  
-           const { amount, billNumber, merchantName, terminalId } = data;  
+           const { amount, billNumber, merchantName, terminalId, merchantType } = data;  
 
            // Validate required fields  
-           if (!amount || !billNumber || !merchantName || !terminalId) {  
+           if (!amount || !billNumber || !merchantName || !terminalId || !merchantType) {  
                 return NextResponse.json({  
                     code: "21",  
                     message: "Missing required fields",  
@@ -81,7 +82,13 @@ export async function POST(request: NextRequest, context: Props) {
 
             try {  
                 // Validate and get the correct portal name  
-                const validPortalName = validatePortalName(portal);  
+                const validPortalName = validatePortalName(portal);
+                const branchName = merchantType.substring(0,3) || "";
+                const columninfo = {
+                    branch_id: branchName,
+                    store_id: terminalId,
+                    store_name: merchantType,
+                };
 
                 // Call processPayment with validated portal name  
                 const paymentResult = await processPayment({  
@@ -90,7 +97,8 @@ export async function POST(request: NextRequest, context: Props) {
                     lsDocumentNo: billNumber,  
                     payPortalName: validPortalName,  
                     channel: "lsretail",
-                    terminalId: terminalId
+                    terminalId: terminalId,
+                    embed_data: JSON.stringify(columninfo),
                 });  
 
                 if (paymentResult.return_code === 1) {  

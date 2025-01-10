@@ -30,6 +30,7 @@ import {
 } from "@/lib/actions/lsretail.action";
 import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
+import { parseStringify } from "@/lib/utils";
 
 const formSchema = z.object({
   payPortalName: z.enum(["zalopay", "vnpay", "ocbpay", "galaxypay"]),
@@ -244,6 +245,15 @@ const PayPortalTransferForm = ({
       }
 
       const terminalId = lsTransactionLineRespond.data[0]?.Store_no || "";
+      const terminalName = lsTransactionLineRespond.data[0]?.Store_name || "";
+      const branchName = terminalName.substring(0, 3) || "";
+      const columninfo = {
+        columninfo: {
+          branch_id: branchName,
+          store_id: terminalId,
+          store_name: terminalName,
+        },
+      };
 
       if (!terminalId) {
         console.warn("Terminal ID not found in transaction details");
@@ -256,6 +266,7 @@ const PayPortalTransferForm = ({
         payPortalName: data.payPortalName,
         channel: "hpinext",
         terminalId: terminalId,
+        embed_data: JSON.stringify(columninfo),
       });
 
       if (result.return_code !== 1) {

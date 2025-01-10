@@ -16,6 +16,7 @@ export interface PaymentRequest {
     payPortalName: "vnpay" | "zalopay" | "ocbpay" | "galaxypay";
     channel: string;
     terminalId: string;
+    embed_data: string;
 }
 
 interface PaymentQuery {  
@@ -173,7 +174,7 @@ export async function queryPayment(
 export async function processPayment(  
     paymentRequest: PaymentRequest  
 ): Promise<PaymentResponse> {  
-    const { email, amount, lsDocumentNo, payPortalName, channel, terminalId } = paymentRequest;  
+    const { email, amount, lsDocumentNo, payPortalName, channel, terminalId, embed_data } = paymentRequest;  
 
     if (!amount || !email || !lsDocumentNo || !payPortalName || !channel || !terminalId) {  
         return {  
@@ -182,7 +183,7 @@ export async function processPayment(
             sub_return_code: -400,  
             sub_return_message: "Missing required fields"  
         };  
-    }  
+    }
 
     try {
         let existingPayportalTrans = null;
@@ -197,7 +198,8 @@ export async function processPayment(
                 email,  
                 lsDocumentNo,  
                 amount,  
-                terminalId  
+                terminalId,
+                embed_data
             );  
 
             if (result.return_code === 1 && result.payPortalOrder) {  
@@ -325,7 +327,8 @@ export async function processPayment(
                 email,  
                 lsDocumentNo,  
                 amount,
-                terminalId  
+                terminalId,
+                embed_data
             );  
 
             if (result.return_code === 1) {  
@@ -358,7 +361,8 @@ export async function processPayment(
                 email,  
                 lsDocumentNo,  
                 amount,
-                terminalId,  
+                terminalId,
+                embed_data
             );
 
             if (result.return_code === 1 && result.payPortalOrder) {
@@ -403,6 +407,8 @@ async function processPaymentByPortal(
     lsDocumentNo: string,  
     amount: string,
     terminalId: string,
+    embed_data: string,
+    item?: string
 ): Promise<PaymentResponse> {  
     switch (portalName.toLowerCase()) {  
         case 'zalopay':  
@@ -421,7 +427,9 @@ async function processPaymentByPortal(
                 app_trans_id,  
                 app_user: email,  
                 amount,  
-                description: `Hoang Phuc International - Payment for order #${app_trans_id}`  
+                description: `Hoang Phuc International - Payment for order #${app_trans_id}`,
+                embed_data,
+                item,
             });
 
             return {  

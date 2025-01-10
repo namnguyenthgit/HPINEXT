@@ -1,24 +1,4 @@
-export interface LSRetailResponse<T> {  
-    success: boolean;  
-    message?: string;  
-    data?: T;  
-    error?: string;  
-  }  
-
-interface LSRetailDocumentResponse {  
-    Receipt_no: string[];
-    [key: string]: unknown;  
-}
-
-export interface LSRetailTransactionLine {  
-    Receipt_no: string;  
-    Store_no: string;  
-    // ... other fields  
-}
-
-interface LSRetailTransactionResponse {  
-    data: LSRetailTransactionLine[];  
-}   
+import { LSRetailDocumentResponse, LSRetailResponse, LSRetailTransactionResponse } from "@/types";
 
 // Base function to fetch data through our Next.js API route  
 async function fetchLSRetailData<T>(  

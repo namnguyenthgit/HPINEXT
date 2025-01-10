@@ -496,21 +496,6 @@ interface PayPortalCallbackResult {
 
 
 //lsretail
-export interface PayPortalPaymentResponse {  
-  return_code: number;  
-  return_message: string;  
-}  
-
-export interface TestResponse {  
-  message: string;  
-}  
-
-export interface ErrorResponse {  
-  error: string;  
-}
-
-//lsretail types
-//api
 export interface lsApiDocReturn {  
   success: boolean;  
   message?: string;  
@@ -520,3 +505,26 @@ export interface lsApiDocReturn {
   };
   error?: string; 
 }
+
+
+export interface LSRetailResponse<T> {  
+  success: boolean;  
+  message?: string;  
+  data?: T;  
+  error?: string;  
+}  
+
+export interface LSRetailDocumentResponse {  
+  Receipt_no: string[];
+  [key: string]: unknown;  
+}
+
+export interface LSRetailTransactionLine {  
+  Receipt_no: string;  
+  Store_no: string;  
+  // ... other fields  
+}
+
+export interface LSRetailTransactionResponse {  
+  data: LSRetailTransactionLine[];  
+} 

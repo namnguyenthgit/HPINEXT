@@ -11,7 +11,7 @@ interface PageProps {
 const Page = async ({ searchParams }: PageProps) => {
   const searchParamsAwaited = await searchParams;
   return (
-    <section className="size-full pt-5 space-y-5">
+    <section className="size-full p-5">
       <PaymentPayportal searchParams={searchParamsAwaited} />
     </section>
   );
