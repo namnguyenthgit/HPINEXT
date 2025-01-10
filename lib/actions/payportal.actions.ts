@@ -566,13 +566,13 @@ export async function processCallback(
 
 export async function formatCallbackResponse(  
     portal: string,   
-    result: PayPortalCallbackData  
+    result: PayPortalCallbackResult  
 ): Promise<NextResponse> {  
     switch (portal) {  
         case 'zalopay':  
             return NextResponse.json({  
                 return_code: result.success ? 1 : 2,  
-                return_message: result.success ? "success" : "failed"  
+                return_message: result.success ? "success" : result.message,  
             });  
         
         // Add other portal response formats here  
@@ -580,7 +580,7 @@ export async function formatCallbackResponse(
         default:  
             return NextResponse.json({  
                 success: result.success,  
-                message: result.success ? "success" : "failed"  
+                message: result.success ? "success" : result.message,
             });  
     }  
 }  

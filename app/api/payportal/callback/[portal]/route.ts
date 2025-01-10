@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, context: Props) {
         
         // Process callback  
         const result = await processCallback(portal, data);
-
+        console.log(`${portal} callback result:`, result)
         // Format and return response  
         return formatCallbackResponse(portal, result);  
 
