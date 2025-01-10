@@ -139,17 +139,23 @@ export const transactionCategoryStyles = {
     textColor: "text-red-700",
     chipBackgroundColor: "bg-inherit",
   },
-  Processing: {
+  processing: {
     borderColor: "border-[#F2F4F7]",
     backgroundColor: "bg-gray-500",
     textColor: "text-[#344054]",
     chipBackgroundColor: "bg-[#F2F4F7]",
   },
-  Success: {
+  success: {
     borderColor: "border-[#12B76A]",
     backgroundColor: "bg-[#12B76A]",
     textColor: "text-[#027A48]",
     chipBackgroundColor: "bg-[#ECFDF3]",
+  },
+  failed: {
+    borderColor: "border-red-600",
+    backgroundColor: "bg-red-500",
+    textColor: "text-red-700",
+    chipBackgroundColor: "bg-inherit",
   },
   Travel: {
     borderColor: "border-[#0047AB]",

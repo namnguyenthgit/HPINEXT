@@ -9,62 +9,86 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// FORMAT DATE TIME
-export const formatDateTime = (dateString: Date) => {
-  const dateTimeOptions: Intl.DateTimeFormatOptions = {
-    weekday: "short", // abbreviated weekday name (e.g., 'Mon')
-    month: "short", // abbreviated month name (e.g., 'Oct')
-    day: "numeric", // numeric day of the month (e.g., '25')
-    hour: "numeric", // numeric hour (e.g., '8')
-    minute: "numeric", // numeric minute (e.g., '30')
-    hour12: true, // use 12-hour clock (true) or 24-hour clock (false)
-  };
+interface FormattedDateResult {  
+  dateTime: string;  
+  dateDay: string;  
+  date: string;  
+  time: string;  
+}  
 
-  const dateDayOptions: Intl.DateTimeFormatOptions = {
-    weekday: "short", // abbreviated weekday name (e.g., 'Mon')
-    year: "numeric", // numeric year (e.g., '2023')
-    month: "2-digit", // abbreviated month name (e.g., 'Oct')
-    day: "2-digit", // numeric day of the month (e.g., '25')
-  };
+interface DateTimeFormatOptions {  
+  dateTime?: Intl.DateTimeFormatOptions;  
+  dateDay?: Intl.DateTimeFormatOptions;  
+  date?: Intl.DateTimeFormatOptions;  
+  time?: Intl.DateTimeFormatOptions;  
+}  
 
-  const dateOptions: Intl.DateTimeFormatOptions = {
-    month: "short", // abbreviated month name (e.g., 'Oct')
-    year: "numeric", // numeric year (e.g., '2023')
-    day: "numeric", // numeric day of the month (e.g., '25')
-  };
+const defaultOptions: DateTimeFormatOptions = {  
+  dateTime: {  
+    weekday: "short",  
+    month: "short",  
+    day: "numeric",  
+    hour: "numeric",  
+    minute: "numeric",  
+    hour12: true,  
+  },  
+  dateDay: {  
+    weekday: "short",  
+    year: "numeric",  
+    month: "2-digit",  
+    day: "2-digit",  
+  },  
+  date: {  
+    month: "short",  
+    year: "numeric",  
+    day: "numeric",  
+  },  
+  time: {  
+    hour: "numeric",  
+    minute: "numeric",  
+    hour12: true,  
+  },  
+};  
 
-  const timeOptions: Intl.DateTimeFormatOptions = {
-    hour: "numeric", // numeric hour (e.g., '8')
-    minute: "numeric", // numeric minute (e.g., '30')
-    hour12: true, // use 12-hour clock (true) or 24-hour clock (false)
-  };
+export const formatDateTime = (  
+  dateString: Date,  
+  locale: string = "en-US",  
+  customOptions?: DateTimeFormatOptions  
+): FormattedDateResult => {  
+  const options = { ...defaultOptions, ...customOptions };  
 
-  const formattedDateTime: string = new Date(dateString).toLocaleString(
-    "en-US",
-    dateTimeOptions
-  );
+  try {  
+    const formattedDateTime = new Date(dateString).toLocaleString(  
+      locale,  
+      options.dateTime  
+    );  
 
-  const formattedDateDay: string = new Date(dateString).toLocaleString(
-    "en-US",
-    dateDayOptions
-  );
+    const formattedDateDay = new Date(dateString).toLocaleString(  
+      locale,  
+      options.dateDay  
+    );  
 
-  const formattedDate: string = new Date(dateString).toLocaleString(
-    "en-US",
-    dateOptions
-  );
+    const formattedDate = new Date(dateString).toLocaleString(  
+      locale,  
+      options.date  
+    );  
 
-  const formattedTime: string = new Date(dateString).toLocaleString(
-    "en-US",
-    timeOptions
-  );
+    const formattedTime = new Date(dateString).toLocaleString(  
+      locale,  
+      options.time  
+    );  
 
-  return {
-    dateTime: formattedDateTime,
-    dateDay: formattedDateDay,
-    dateOnly: formattedDate,
-    timeOnly: formattedTime,
-  };
+    return {  
+      dateTime: formattedDateTime,  
+      dateDay: formattedDateDay,  
+      date: formattedDate,  
+      time: formattedTime,  
+    };  
+  } catch (error) {  
+    console.error(`Error formatting date for locale ${locale}:`, error);  
+    // Fallback to en-US if the provided locale fails  
+    return formatDateTime(dateString, "en-US", customOptions);  
+  }  
 };
 
 export function formatAmount(amount: number): string {

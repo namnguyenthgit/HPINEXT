@@ -50,22 +50,22 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
       return user.storeList.split(",").map((store: string) => store.trim());
     }
 
-    console.log("Processed store array:", user.storeList);
+    //console.log("Processed store array:", user.storeList);
     return Array.isArray(user.storeList) ? user.storeList : [user.storeNo];
   };
 
   // Function to load transactions
   const loadTransactions = async (storeArray: string[]): Promise<void> => {
-    console.log("Input storeArray:", storeArray);
-    console.log("Type of storeArray:", typeof storeArray);
-    console.log("Is Array?", Array.isArray(storeArray));
-    console.log("First element:", storeArray[0]);
-    console.log("Type of first element:", typeof storeArray[0]);
+    // console.log("Input storeArray:", storeArray);
+    // console.log("Type of storeArray:", typeof storeArray);
+    // console.log("Is Array?", Array.isArray(storeArray));
+    // console.log("First element:", storeArray[0]);
+    // console.log("Type of first element:", typeof storeArray[0]);
 
     try {
       const response = await getPayPortalTransByStores(storeArray);
       if (response && Array.isArray(response.documents)) {
-        console.log("Loaded transactions:", response.documents);
+        //console.log("Loaded transactions:", response.documents);
         setTransactions(response.documents);
       }
     } catch (error: unknown) {
@@ -90,17 +90,17 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
           return;
         }
 
-        console.log("Initial user data:", {
-          storeNo: initialUser.storeNo,
-          storeList: initialUser.storeList,
-          type: typeof initialUser.storeList,
-        });
+        // console.log("Initial user data:", {
+        //   storeNo: initialUser.storeNo,
+        //   storeList: initialUser.storeList,
+        //   type: typeof initialUser.storeList,
+        // });
 
         setUser(initialUser);
 
         // Get store array and load initial transactions
         const storeArray = getStoreArray(initialUser);
-        console.log("Store array:", storeArray);
+        //console.log("Store array:", storeArray);
         await loadTransactions(storeArray);
 
         // Set up user subscription
@@ -108,7 +108,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
           () => {}, // onCreate
           (updatedUser) => {
             if (updatedUser.$id === initialUser.$id) {
-              console.log("User updated:", updatedUser);
+              // console.log("User updated:", updatedUser);
               setUser(updatedUser as ExtendedUser);
 
               // Reload transactions when user updates
@@ -123,13 +123,13 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
         transUnsubscribe = subscribeToPayportalTrans(
           (newTransaction) => {
             if (storeArray.includes(newTransaction.terminalId)) {
-              console.log("New transaction:", newTransaction);
+              // console.log("New transaction:", newTransaction);
               setTransactions((prev) => [newTransaction, ...prev]);
             }
           },
           (updatedTransaction) => {
             if (storeArray.includes(updatedTransaction.terminalId)) {
-              console.log("Updated transaction:", updatedTransaction);
+              // console.log("Updated transaction:", updatedTransaction);
               setTransactions((prev) =>
                 prev.map((t) =>
                   t.$id === updatedTransaction.$id ? updatedTransaction : t
@@ -138,7 +138,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
             }
           },
           (deletedTransactionId) => {
-            console.log("Deleted transaction:", deletedTransactionId);
+            // console.log("Deleted transaction:", deletedTransactionId);
             setTransactions((prev) =>
               prev.filter((t) => t.$id !== deletedTransactionId)
             );

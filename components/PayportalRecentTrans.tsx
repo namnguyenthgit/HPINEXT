@@ -1,10 +1,11 @@
 import Link from "next/link";
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TransactionsTable from "./TransactionsTable";
 import { Pagination } from "./Pagination";
 import { PayPortalTrans } from "@/types";
 import { PayportalTransTable } from "./PayportalTransTable";
+import { PayportalTabItem } from "./PayportalTabItem";
+import PayPortalInfo from "./PayPortalInfo";
 
 interface RecentTransactionsProps {
   portals: string[];
@@ -43,22 +44,17 @@ const PayportalRecentTrans = ({
         <TabsList className="recent-transactions-tablist">
           {portals.map((portal: string) => (
             <TabsTrigger key={portal} value={portal}>
-              <div className="flex items-center space-x-2">
-                <span>{portal}</span>
-              </div>
+              <PayportalTabItem portal={portal} currentPortal={currentPortal} />
             </TabsTrigger>
           ))}
         </TabsList>
         {portals.map((portal: string) => (
           <TabsContent value={portal} key={portal} className="space-y-4">
-            <div className="bg-card rounded-lg p-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">{portal}</h3>
-                <div className="text-sm text-muted-foreground">
-                  {transactions.length} transactions
-                </div>
-              </div>
-            </div>
+            <PayPortalInfo
+              portal={portal}
+              currentPortal={currentPortal}
+              transactionCount={transactions.length}
+            />
             {/* <TransactionsTable transactions={currentTransactions} /> */}
             <PayportalTransTable transactions={currentTransactions} />
             {totalPages > 1 && (

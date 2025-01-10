@@ -1,76 +1,127 @@
-import { removeSpecialCharacters } from "@/lib/utils";
+import React from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn, formatDateTime, removeSpecialCharacters } from "@/lib/utils";
 import { PayPortalTrans } from "@/types";
+import { transactionCategoryStyles } from "@/constants";
+import Link from "next/link";
+import { RawCopy } from "./rawCopy";
 
 interface TransactionsTableProps {
   transactions: PayPortalTrans[];
 }
 
+declare interface CategoryBadgeProps {
+  category: string;
+}
+
+const CategoryBadge = ({ category }: CategoryBadgeProps) => {
+  const { borderColor, backgroundColor, textColor, chipBackgroundColor } =
+    transactionCategoryStyles[
+      category as keyof typeof transactionCategoryStyles
+    ] || transactionCategoryStyles.default;
+
+  return (
+    <div className={cn("category-badge", borderColor, chipBackgroundColor)}>
+      <div className={cn("size-2 rounded-full", backgroundColor)} />
+      <p className={cn("text-[12px] font-medium", textColor)}>{category}</p>
+    </div>
+  );
+};
 export function PayportalTransTable({ transactions }: TransactionsTableProps) {
-  const formatAmount = (amount: string | null | undefined): string => {
+  const formatAmountValue = (amount: string | null | undefined): string => {
     if (!amount) return "0";
     return new Intl.NumberFormat("vi-VN").format(parseInt(amount));
   };
 
-  const formatStatus = (status: string | null | undefined): string => {
-    if (!status) return "";
-    return status.charAt(0).toUpperCase() + status.slice(1);
-  };
-
-  const rows = transactions.map((transaction) => ({
-    id: transaction.$id || "",
-    email: transaction.email || "",
-    payPortalName: transaction.payPortalName || "",
-    channel: transaction.channel || "",
-    status: formatStatus(transaction.status),
-    amount: formatAmount(transaction.amount),
-    documentNo: transaction.lsDocumentNo || "",
-    payPortalOrder: removeSpecialCharacters(transaction.payPortalOrder || ""),
-    providerTransId: removeSpecialCharacters(
-      transaction.callbackProviderTransId || ""
-    ),
-    paymentTime: transaction.callbackPaymentTime || "",
-    errorMessage: transaction.callbackErrorMessage || "",
-    createdAt: transaction.$createdAt || "",
-  }));
-
   return (
-    <div className="rounded-md border">
-      <table className="w-full text-sm">
-        <thead className="border-b bg-slate-50">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium">Email</th>
-            <th className="px-3 py-2 text-left font-medium">Portal</th>
-            <th className="px-3 py-2 text-left font-medium">Channel</th>
-            <th className="px-3 py-2 text-left font-medium">Status</th>
-            <th className="px-3 py-2 text-right font-medium">Amount</th>
-            <th className="px-3 py-2 text-left font-medium">Document No</th>
-            <th className="px-3 py-2 text-left font-medium">Portal Order</th>
-            <th className="px-3 py-2 text-left font-medium">
-              Provider Trans ID
-            </th>
-            <th className="px-3 py-2 text-left font-medium">Payment Time</th>
-            <th className="px-3 py-2 text-left font-medium">Error Message</th>
-            <th className="px-3 py-2 text-left font-medium">Created At</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b">
-              <td className="px-3 py-2">{row.email}</td>
-              <td className="px-3 py-2">{row.payPortalName}</td>
-              <td className="px-3 py-2">{row.channel}</td>
-              <td className="px-3 py-2">{row.status}</td>
-              <td className="px-3 py-2 text-right">{row.amount}</td>
-              <td className="px-3 py-2">{row.documentNo}</td>
-              <td className="px-3 py-2">{row.payPortalOrder}</td>
-              <td className="px-3 py-2">{row.providerTransId}</td>
-              <td className="px-3 py-2">{row.paymentTime}</td>
-              <td className="px-3 py-2">{row.errorMessage}</td>
-              <td className="px-3 py-2">{row.createdAt}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader className="bg-[#f9fafb]">
+        <TableRow>
+          <TableHead className="px-2 w-14 text-center border-r-2">#</TableHead>
+          <TableHead className="px-2 max-md:hidden">Store</TableHead>
+          <TableHead className="px-2">Document No</TableHead>
+          <TableHead className="px-2">Channel</TableHead>
+          <TableHead className="px-2">Portal Order</TableHead>
+          <TableHead className="px-2">Payment Portal URL</TableHead>
+          <TableHead className="px-2">Amount</TableHead>
+          <TableHead className="px-2">Status</TableHead>
+          <TableHead className="px-2 max-md:hidden">Payment Time</TableHead>
+          <TableHead className="px-2 max-md:hidden">Created At</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {transactions.map((transaction, index) => (
+          <TableRow
+            key={transaction.$id}
+            className={cn(
+              "transition-colors border-b",
+              transaction.status === "success"
+                ? "bg-emerald-50 hover:bg-emerald-100"
+                : transaction.status === "pending"
+                ? "bg-yellow-50 hover:bg-yellow-100"
+                : transaction.status === "failed"
+                ? "bg-red-50 hover:bg-red-100"
+                : "bg-gray-50 hover:bg-gray-100"
+            )}
+          >
+            <TableCell className="px-2 text-center text-sm text-gray-500 font-medium border-r-2">
+              {index + 1}
+            </TableCell>
+            <TableCell className="px-2">
+              <div className="max-w-[200px]">{transaction.terminalId}</div>
+            </TableCell>
+            <TableCell className="px-2">{transaction.lsDocumentNo}</TableCell>
+            <TableCell className="px-2">{transaction.channel}</TableCell>
+            <TableCell className="px-2">
+              <RawCopy
+                value={transaction.payPortalOrder}
+                title="Portal Order"
+              />
+            </TableCell>
+            <TableCell className="px-2">
+              <Link
+                href={transaction.payPortalPaymentUrl}
+                target="_blank"
+                className="cursor-pointer"
+              >
+                <h1 className="text-blue-600 hover:underline">Link</h1>
+              </Link>
+            </TableCell>
+            <TableCell
+              className={cn(
+                "pl-3 pr-10 font-semibold",
+                transaction.status === "success"
+                  ? "text-[#039855]"
+                  : transaction.status === "failed"
+                  ? "text-[#f04438]"
+                  : "text-gray-600"
+              )}
+            >
+              {formatAmountValue(transaction.amount)}
+            </TableCell>
+            <TableCell className="px-2">
+              <CategoryBadge category={transaction.status} />
+            </TableCell>
+            <TableCell className="px-2 max-md:hidden">
+              {transaction.callbackPaymentTime &&
+                formatDateTime(new Date(transaction.callbackPaymentTime))
+                  .dateTime}
+            </TableCell>
+            <TableCell className="px-2 max-md:hidden">
+              {transaction.$createdAt &&
+                formatDateTime(new Date(transaction.$createdAt), "vi-VN")
+                  .dateTime}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
