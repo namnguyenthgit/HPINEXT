@@ -122,14 +122,23 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
         // Set up transaction subscription
         transUnsubscribe = subscribeToPayportalTrans(
           (newTransaction) => {
+            console.log("New transaction:", newTransaction);
             if (storeArray.includes(newTransaction.terminalId)) {
-              // console.log("New transaction:", newTransaction);
               setTransactions((prev) => [newTransaction, ...prev]);
             }
           },
           (updatedTransaction) => {
+            console.log("Updated transaction:", updatedTransaction);
+            console.log("storeArray:", storeArray);
+            console.log(
+              "terminalId:",
+              updatedTransaction.terminalId.toString()
+            );
+            console.log(
+              "check:",
+              storeArray.includes(updatedTransaction.terminalId.toString())
+            );
             if (storeArray.includes(updatedTransaction.terminalId)) {
-              // console.log("Updated transaction:", updatedTransaction);
               setTransactions((prev) =>
                 prev.map((t) =>
                   t.$id === updatedTransaction.$id ? updatedTransaction : t
@@ -138,7 +147,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
             }
           },
           (deletedTransactionId) => {
-            // console.log("Deleted transaction:", deletedTransactionId);
+            console.log("Deleted transaction:", deletedTransactionId);
             setTransactions((prev) =>
               prev.filter((t) => t.$id !== deletedTransactionId)
             );

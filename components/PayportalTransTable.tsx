@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn, formatDateTime, removeSpecialCharacters } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { PayPortalTrans } from "@/types";
 import { transactionCategoryStyles } from "@/constants";
 import Link from "next/link";
