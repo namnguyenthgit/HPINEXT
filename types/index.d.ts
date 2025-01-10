@@ -26,6 +26,7 @@ declare type User = {
   firstName: string;
   lastName: string;
   name: string;
+  storeNo: string;
 };
 
 declare type Account = {

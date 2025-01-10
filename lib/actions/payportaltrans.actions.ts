@@ -115,7 +115,7 @@ export const getPayPortalTransByStores = async (storeList: string[]): Promise<ap
   try {  
     const { database } = await createAdminClient();  
 
-    console.log("Original storeList:", storeList);  
+    //console.log("Original storeList:", storeList);  
 
     // Ensure we have an array of individual store IDs  
     const stores: string[] = Array.isArray(storeList)   
@@ -124,7 +124,7 @@ export const getPayPortalTransByStores = async (storeList: string[]): Promise<ap
         : storeList  
       : [storeList];  
 
-    console.log("Processing stores:", stores);  
+    //console.log("Processing stores:", stores);  
 
     const transactions = await database.listDocuments(  
       DATABASE_ID!,  
@@ -136,7 +136,7 @@ export const getPayPortalTransByStores = async (storeList: string[]): Promise<ap
       ]  
     );  
 
-    console.log("Query result:", transactions);  
+    //console.log("Query result:", transactions);  
     return transactions as appwritePayportalTransResponse;  
   } catch (error: unknown) {  
     const appwriteError = error as appwritePayportalTransError;  

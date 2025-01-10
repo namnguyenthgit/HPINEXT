@@ -44,13 +44,6 @@ const PAY_PORTALS = [
   // { name: "Galaxy Pay", value: "Galaxy Pay" },
 ];
 
-// Mock document numbers - replace with actual data
-// const DOCUMENT_NUMBERS = [
-//   "000000P015000047084",
-//   "000000P015000047085",
-//   "000000P015000047086",
-// ];
-
 interface PayPortalTransferFormProps {
   email: string;
   storeNo: string;
@@ -336,38 +329,6 @@ const PayPortalTransferForm = ({
           )}
         />
 
-        {/*DOCUMENTLIST by mockdata*/}
-        {/* <FormField
-          control={form.control}
-          name="lsDocumentNo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Document Number</FormLabel>
-              <Select
-                disabled={isLoading}
-                onValueChange={field.onChange}
-                value={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select document number" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <div className="bg-white">
-                    {DOCUMENT_NUMBERS.map((docNo) => (
-                      <SelectItem key={docNo} value={docNo}>
-                        {docNo}
-                      </SelectItem>
-                    ))}
-                  </div>
-                </SelectContent>
-              </Select>
-              <FormMessage className="text-red-500" />
-            </FormItem>
-          )}
-        /> */}
-
         <FormField
           control={form.control}
           name="lsDocumentNo"
@@ -544,7 +505,7 @@ const PayPortalTransferForm = ({
         {showManualRedirect && paymentUrl && (
           <div className="mt-4 p-4 border rounded-md bg-yellow-50">
             <p className="text-sm text-yellow-700 mb-2">
-              If the payment page didn't open automatically, please click the
+              If the payment page did not open automatically, please click the
               button below:
             </p>
             <Button

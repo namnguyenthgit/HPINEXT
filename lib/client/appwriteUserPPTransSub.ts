@@ -19,7 +19,7 @@ export interface RealtimePayPortalTrans extends PayPortalTrans {
 }
 
 // Define which fields to monitor   
-export const MONITORED_FIELDS = ['status', 'lsDocumentNo', 'payPortalName'] as const;  
+export const MONITORED_FIELDS = ['status', 'lsDocumentNo', 'payPortalName', 'payPortalOrder', 'callbackPaymentTime','amount'] as const;  
 export type MonitoredFields = typeof MONITORED_FIELDS[number]; 
 
 interface SubscriptionHandlers {  

@@ -44,8 +44,8 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
     <Table>
       <TableHeader className="bg-[#f9fafb]">
         <TableRow>
-          <TableHead className="px-2 w-14 text-center border-r-2">#</TableHead>
-          <TableHead className="px-2 max-md:hidden">Store</TableHead>
+          <TableHead className="px-2 w-14 text-center border-r-2 min-w-[50px]">#</TableHead>
+          <TableHead className="px-2">Store</TableHead>
           <TableHead className="px-2">Document No</TableHead>
           <TableHead className="px-2">Channel</TableHead>
           <TableHead className="px-2">Portal Order</TableHead>
