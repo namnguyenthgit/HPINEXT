@@ -487,36 +487,44 @@ function isZaloPayCallback(
         hasProperty(data, 'type') &&  
         typeof data.type === 'number'  
     );  
-} 
+}
 
 export async function parseCallbackData(  
     portal: string,  
     rawdata: RawCallbackData  
 ): Promise<ParsedPPTCallbackDataAccept> {
-    switch (portal) {  
-        case 'zalopay':  
-            if (isZaloPayCallback(rawdata)) {
-                return {  
-                    parsedData: {  
-                        payPortalOrder: rawdata.data.app_trans_id,
-                        callbackProviderTransId: rawdata.data.app_trans_id,
-                        callbackPaymentTime: rawdata.data.server_time,
-                        callbackamount: rawdata.data.amount,
-                        rawCallback: rawdata.data
+    try {
+        switch (portal) {  
+            case 'zalopay': 
+                if (isZaloPayCallback(rawdata)) {
+                    return {  
+                        parsedData: {  
+                            payPortalOrder: JSON.stringify(rawdata.data.app_trans_id),
+                            callbackProviderTransId: JSON.stringify(rawdata.data.app_trans_id),
+                            callbackPaymentTime: JSON.stringify(rawdata.data.server_time),
+                            callbackamount: JSON.stringify(rawdata.data.amount),
+                            rawCallback: JSON.stringify(rawdata.data)
+                        }
                     }
+                } else {  
+                    return {  
+                        parsedData: null,  
+                        error: 'Invalid ZaloPay callback data format'  
+                    };  
                 }
-            } else {  
+            default:  
                 return {  
                     parsedData: null,  
-                    error: 'Invalid ZaloPay callback data format'  
+                    error: `Unsupported payment portal: ${portal}`  
                 };  
-            }
-        default:  
-            return {  
-                parsedData: null,  
-                error: `Unsupported payment portal: ${portal}`  
-            };  
-    } 
+        }
+    } catch (error) {
+        return {  
+            parsedData: null,  
+            error: `Can not parse ${portal} callbackdata error:"${error}`
+        };
+    }
+     
 } 
 
 export async function processCallback(  
@@ -535,8 +543,8 @@ export async function processCallback(
         if (!parsedCallbackData.parsedData){
             return {
                 success: false,
-                message: `Can not parse ${portal} callbackdata!`
-            } 
+                message: parsedCallbackData.error || 'unknow error'
+            }
         }
         const callbackDataProccess = parsedCallbackData.parsedData;
         const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
