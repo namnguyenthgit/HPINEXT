@@ -5,10 +5,14 @@ import { RealtimeResponseEvent } from 'appwrite';
 import { appwriteConfig } from '@/lib/appwrite/appwrite-config';  
 import { PayPortalTrans, User } from '@/types';  
 
+
 interface SubscriptionHandlers {  
   onUserChange?: (user: User) => void;  
-  onTransactionStatusChange?: (transaction: PayPortalTrans) => void;  
-}  
+  onTransactionChange?: (  
+    transaction: PayPortalTrans,  
+    changedFields: MonitoredFields[] | 'created' | 'deleted'  
+  ) => void;  
+} 
 
 export interface RealtimeUser extends User {  
     $previous?: Partial<User>;  
@@ -22,14 +26,6 @@ export interface RealtimePayPortalTrans extends PayPortalTrans {
 export const MONITORED_FIELDS = ['status', 'lsDocumentNo', 'payPortalName', 'payPortalOrder', 'callbackPaymentTime','amount'] as const;  
 export type MonitoredFields = typeof MONITORED_FIELDS[number]; 
 
-interface SubscriptionHandlers {  
-  onUserChange?: (user: User) => void;  
-  onTransactionChange?: (  
-    transaction: PayPortalTrans,  
-    changedFields: MonitoredFields[]  
-  ) => void;  
-}
-  
 export const subcribePayportalTrans = (  
   userId: string,  
   storeIds: string[],  
@@ -47,15 +43,30 @@ export const subcribePayportalTrans = (
     `databases.${appwriteConfig.databaseId}.collections.${appwriteConfig.payPortalTransCollectionId}.documents`,  
     (response: RealtimeResponseEvent<RealtimePayPortalTrans>) => {  
       const transaction = response.payload;  
-      const previousData = transaction.$previous || {};  
-
-      const changedFields = fieldsToMonitor.filter(field =>   
-        previousData[field] !== transaction[field]  
-      ) as MonitoredFields[];  
       
-      if (changedFields.length > 0 && storeIds.includes(transaction.terminalId)) {  
-        const { $previous, ...transactionData } = transaction;  
-        handlers.onTransactionChange?.(transactionData, changedFields);  
+      // Only process transactions for the relevant stores  
+      if (!storeIds.includes(transaction.terminalId)) {  
+        return;  
+      }  
+
+      const { $previous, ...transactionData } = transaction;  
+
+      // Handle different event types  
+      if (response.events.includes('databases.*.collections.*.documents.*.create')) {  
+        handlers.onTransactionChange?.(transactionData, 'created');  
+      }  
+      else if (response.events.includes('databases.*.collections.*.documents.*.delete')) {  
+        handlers.onTransactionChange?.(transactionData, 'deleted');  
+      }  
+      else if (response.events.includes('databases.*.collections.*.documents.*.update')) {  
+        const previousData = transaction.$previous || {};  
+        const changedFields = fieldsToMonitor.filter(field =>  
+          previousData[field] !== transaction[field]  
+        ) as MonitoredFields[];  
+
+        if (changedFields.length > 0) {  
+          handlers.onTransactionChange?.(transactionData, changedFields);  
+        }  
       }  
     }  
   );  

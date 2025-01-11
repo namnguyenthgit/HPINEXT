@@ -99,31 +99,43 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
             },  
             onTransactionChange: (updatedTransaction, changedFields) => {  
               setTransactions(prev => {  
-                // If it's a new transaction  
-                const existingTransIndex = prev.findIndex(t => t.$id === updatedTransaction.$id);  
-                
-                if (existingTransIndex === -1) {  
+                // Handle deleted transaction  
+                if (changedFields === 'deleted') {  
+                  return prev.filter(t => t.$id !== updatedTransaction.$id);  
+                }
+
+                // Handle new transaction  
+                if (changedFields === 'created') {  
                   return [updatedTransaction, ...prev];  
-                }  
+                } 
 
-                // If it's an update  
-                const newTransactions = [...prev];  
-                newTransactions[existingTransIndex] = {  
-                  ...newTransactions[existingTransIndex],  
-                  ...updatedTransaction  
-                };  
-                return newTransactions;  
+                // Handle updated transaction  
+                if (Array.isArray(changedFields)) {  
+                  return prev.map(t =>   
+                    t.$id === updatedTransaction.$id   
+                      ? { ...t, ...updatedTransaction }  
+                      : t  
+                  );  
+                }
+
+                return prev;
               });  
 
-              // Log changes  
-              console.log('Transaction updated:', {  
-                id: updatedTransaction.$id,  
-                changedFields,  
-                newValues: changedFields.map(field => ({  
-                  field,  
-                  value: updatedTransaction[field]  
-                }))  
-              });  
+              // Enhanced logging for debugging  
+              if (changedFields === 'created') {  
+                console.log('New transaction created:', updatedTransaction);  
+              } else if (changedFields === 'deleted') {  
+                console.log('Transaction deleted:', updatedTransaction);  
+              } else if (Array.isArray(changedFields)) {  
+                console.log('Transaction updated:', {  
+                  id: updatedTransaction.$id,  
+                  changedFields,  
+                  newValues: changedFields.map(field => ({  
+                    field,  
+                    value: updatedTransaction[field]  
+                  }))  
+                });  
+              }  
             }  
           }  
         );  
