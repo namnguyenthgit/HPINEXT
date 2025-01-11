@@ -484,6 +484,20 @@ interface RawCallbackData {
   type?: number;  
 }
 
+interface parsedPPTCallbackData {
+  payPortalOrder: string;
+  callbackProviderTransId: string;
+  callbackamount: string;
+  callbackPaymentTime?: string;
+  callbackErrorMessage?: string;
+  rawCallback?: string;
+}
+
+interface ParsedPPTCallbackDataAccept {  
+  parsedData: ParsedPPTCallbackData | null;  
+  error?: string;  
+}
+
 interface PayPortalCallbackData {
   data: string | ZaloPayData;
   [key: string]: unknown;

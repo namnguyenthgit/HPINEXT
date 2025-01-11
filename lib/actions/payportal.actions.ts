@@ -4,9 +4,9 @@ import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';
 import { zaloConfig, ZaloPayResponse } from "../zalo/zalo.config";
 import { NextResponse } from 'next/server';
 import { appConfig} from '../appconfig';
-import { createPayPortalTrans, getPayPortalTransByDocNo, updatePayPortalTrans } from './payportaltrans.actions';
+import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
-import { lsApiDocReturn, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
+import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -444,7 +444,7 @@ async function processPaymentByPortal(
 //callback
 export async function validateCallback(
     portal: string,
-    rawdata:PayPortalCallbackData
+    rawdata:RawCallbackData
 ): Promise<boolean> {
     switch (portal) {
         case 'zalopay':
@@ -492,32 +492,37 @@ function isZaloPayCallback(
 export async function parseCallbackData(  
     portal: string,  
     rawdata: RawCallbackData  
-): Promise<{ payPortalOrder: string | null }> {  
-    let parsedCallbackData;  
-
+): Promise<ParsedPPTCallbackDataAccept> {
     switch (portal) {  
         case 'zalopay':  
-            if (isZaloPayCallback(rawdata)) {  
-                parsedCallbackData = {  
-                    payPortalOrder: rawdata.data.app_trans_id  
-                };  
+            if (isZaloPayCallback(rawdata)) {
+                return {  
+                    parsedData: {  
+                        payPortalOrder: rawdata.data.app_trans_id,
+                        callbackProviderTransId: rawdata.data.app_trans_id,
+                        callbackPaymentTime: rawdata.data.server_time,
+                        callbackamount: rawdata.data.amount,
+                        rawCallback: rawdata.data
+                    }
+                }
             } else {  
-                throw new Error('Invalid ZaloPay callback data format');  
-            }  
-            break;  
+                return {  
+                    parsedData: null,  
+                    error: 'Invalid ZaloPay callback data format'  
+                };  
+            }
         default:  
-            parsedCallbackData = {  
-                payPortalOrder: null
+            return {  
+                parsedData: null,  
+                error: `Unsupported payment portal: ${portal}`  
             };  
-    }  
-
-    return parsedCallbackData;  
+    } 
 } 
 
 export async function processCallback(  
     portal: string,   
-    data: PayPortalCallbackData  
-): Promise<PayPortalCallbackResult> {  
+    data: RawCallbackData  
+): Promise<PayPortalCallbackResult> {
     if (!validateCallback(portal, data)) {
         return {
             success: false,
@@ -525,23 +530,37 @@ export async function processCallback(
         }
     }
     
-    try {  
-        const payPortalTrans = await getPayPortalTransByDocNo(String(data.payPortalOrder));  
-        if (!payPortalTrans) {  
-            return {  
-                success: false,  
-                message: `${portal} order "${data.payPortalOrder}" not found!!!`  
-            };  
-        }  
-
+    try {
+        const parsedCallbackData = await parseCallbackData(portal,data);
+        if (!parsedCallbackData.parsedData){
+            return {
+                success: false,
+                message: `Can not parse ${portal} callbackdata!`
+            } 
+        }
+        const callbackDataProccess = parsedCallbackData.parsedData;
+        const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
+        const payPortalTrans = await getPPTransByColumnName('payPortalOrder', callbackDataProccess.payPortalOrder);
+        if (!payPortalTrans) {
+            return {
+                success: false,
+                message: `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`
+            }
+        }
+        let callbackInternalCheckErr: string | undefined;
+        const requestAmount = Number(payPortalTrans.amount);  
+        const callbackAmount = Number(callbackDataProccess.amount);
+        if(requestAmount != callbackAmount){
+            callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request.`;
+        }
         const updateSuccess = await safeUpdatePayPortalTrans(  
             payPortalTrans.$id,  
             {  
-                status: data.status,  
-                callbackProviderTransId: data.zp_trans_id,  
-                callbackPaymentTime: data.server_time,  
-                callbackErrorMessage: data.error_message,  
-                rawCallback: JSON.stringify(data)  
+                status: callbackInternalCheckErr? 'failed': 'success',
+                callbackProviderTransId: callbackDataProccess.app_trans_id,  
+                callbackPaymentTime: payment_time,
+                callbackErrorMessage: callbackInternalCheckErr || '',
+                rawCallback: JSON.stringify(callbackDataProccess.rawCallback)
             }  
         );  
 
@@ -550,12 +569,12 @@ export async function processCallback(
                 success: false,  
                 message: `Failed to update payPortalTrans: ${payPortalTrans.$id}`  
             };  
-        }  
-
+        }
+        
         return {  
             success: true,  
             message: 'success'
-        };  
+        }; 
     } catch (error) {  
         return {  
             success: false,  

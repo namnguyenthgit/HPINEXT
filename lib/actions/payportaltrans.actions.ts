@@ -148,6 +148,28 @@ export const getPayPortalTransByStores = async (storeList: string[]): Promise<ap
   }  
 };
 
+export const getPPTransByColumnName = async (column_name: string, value: string): Promise<PayPortalTrans> => {
+  try {
+
+    //console.log('getTransactionsByDocNo Input lsDocumentNo:', lsDocumentNo);
+    const { database } = await createAdminClient();
+
+    const payPortalTrans = await database.listDocuments(
+      DATABASE_ID!,
+      PAYPORTALTRANS_COLLECTION_ID!,
+      [  
+        // Make sure to use the exact field name as in your Appwrite collection  
+        Query.equal('column_name', [value])  // Note the array syntax  
+      ]
+    )
+    //console.log('Query result:', transactions.documents);
+    return payPortalTrans.documents[0] as PayPortalTrans || null;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
 export const deletePayPortalTrans = async (documentId: string) => {  
   try {  
     const { database } = await createAdminClient();  
