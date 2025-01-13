@@ -514,10 +514,11 @@ export async function processCallback(
             callbackInternalCheckErr = `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`
     
         } else {
+            console.log("callbackDataProccess:",callbackDataProccess);
             const requestAmount = Number(payPortalTrans.amount);  
             const callbackAmount = Number(callbackDataProccess.amount);
             if(requestAmount != callbackAmount){
-                callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request.`;
+                callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request:"${requestAmount}"`;
             }
         }
         const updateSuccess = await safeUpdatePayPortalTrans(  
