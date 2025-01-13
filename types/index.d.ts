@@ -454,8 +454,8 @@ declare interface createZalopayOrderParams {
 }
 
 //payPortalCallback
-interface ZaloPayData {  
-  app_id: number;  
+interface ZalopayCallbackData {  
+  app_id: number;
   app_trans_id: string;  
   app_time: number;  
   app_user: string;  
@@ -464,11 +464,10 @@ interface ZaloPayData {
   item: string;  
   zp_trans_id: number;  
   server_time: number;  
-  channel: number;  
-  merchant_user_id: string;  
-  zp_user_id: string;  
-  user_fee_amount: number;  
-  discount_amount: number;  
+  channel?: number;  
+  merchant_user_id?: string;  
+  user_fee_amount?: number;  
+  discount_amount?: number;  
 }
 
 // Specific ZaloPay callback interface  
@@ -479,7 +478,7 @@ interface ZaloPayCallback extends PayPortalCallbackData {
 }
 
 interface RawCallbackData {  
-  data: unknown;  
+  data: ZalopayCallbackData;  
   mac?: string;  
   type?: number;  
 }
@@ -507,7 +506,6 @@ interface PayPortalCallbackResult {
   success: boolean;
   message?: string;
 }
-
 
 
 //lsretail

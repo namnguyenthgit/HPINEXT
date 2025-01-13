@@ -44,7 +44,9 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
     <Table>
       <TableHeader className="bg-[#f9fafb]">
         <TableRow>
-          <TableHead className="px-2 w-14 text-center border-r-2 min-w-[50px]">#</TableHead>
+          <TableHead className="px-2 w-14 text-center border-r-2 min-w-[50px]">
+            #
+          </TableHead>
           <TableHead className="px-2">Store</TableHead>
           <TableHead className="px-2">Document No</TableHead>
           <TableHead className="px-2">Channel</TableHead>
@@ -82,7 +84,7 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
             <TableCell className="px-2">
               <RawCopy
                 value={transaction.payPortalOrder}
-                title="Portal Order"
+                title="Portal Order No"
               />
             </TableCell>
             <TableCell className="px-2">

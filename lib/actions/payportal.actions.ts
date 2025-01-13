@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
-import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackData, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
+import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -454,41 +454,6 @@ export async function validateCallback(
     }
 }
 
-// Helper function to check if an object has specific property  
-function hasProperty<K extends string>(  
-    obj: unknown,  
-    prop: K  
-): obj is Record<K, unknown> {  
-    return typeof obj === 'object' &&   
-           obj !== null &&   
-           prop in obj;  
-} 
-
-// Helper function to check if object matches ZaloPayData structure  
-function isZaloPayData(data: unknown): data is ZaloPayData {  
-    if (!data || typeof data !== 'object') return false;  
-    
-    return hasProperty(data, 'app_trans_id') &&  
-           typeof (data as Record<string, unknown>).app_trans_id === 'string' &&  
-           hasProperty(data, 'app_id') &&  
-           typeof (data as Record<string, unknown>).app_id === 'number';  
-    // Add more specific checks as needed  
-}
-
-// Main type guard for ZaloPay callback  
-function isZaloPayCallback(  
-    data: RawCallbackData  
-): data is ZaloPayCallback {  
-    return (  
-        hasProperty(data, 'data') &&  
-        isZaloPayData(data.data) &&  
-        hasProperty(data, 'mac') &&  
-        typeof data.mac === 'string' &&  
-        hasProperty(data, 'type') &&  
-        typeof data.type === 'number'  
-    );  
-}
-
 export async function parseCallbackData(  
     portal: string,  
     rawdata: RawCallbackData  
@@ -496,21 +461,14 @@ export async function parseCallbackData(
     try {
         switch (portal) {  
             case 'zalopay': 
-                if (isZaloPayCallback(rawdata)) {
-                    return {  
-                        parsedData: {  
-                            payPortalOrder: JSON.stringify(rawdata.data.app_trans_id),
-                            callbackProviderTransId: JSON.stringify(rawdata.data.app_trans_id),
-                            callbackPaymentTime: JSON.stringify(rawdata.data.server_time),
-                            callbackamount: JSON.stringify(rawdata.data.amount),
-                            rawCallback: JSON.stringify(rawdata.data)
-                        }
+                return {  
+                    parsedData: {  
+                        payPortalOrder: JSON.stringify(rawdata.data.app_trans_id),
+                        callbackProviderTransId: JSON.stringify(rawdata.data.app_trans_id),
+                        callbackPaymentTime: JSON.stringify(rawdata.data.server_time),
+                        callbackamount: JSON.stringify(rawdata.data.amount),
+                        rawCallback: JSON.stringify(rawdata.data)
                     }
-                } else {  
-                    return {  
-                        parsedData: null,  
-                        error: 'Invalid ZaloPay callback data format'  
-                    };  
                 }
             default:  
                 return {  
