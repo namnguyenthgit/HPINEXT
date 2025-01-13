@@ -35,7 +35,7 @@ export async function fetchLsDocuments(type: string, params: string): Promise<ls
     try {
         const baseurl = appConfig.baseurl.replace(/\/$/, '');
         const endpoint = `${baseurl}/api/lsretail/getdata/${type}?value=${encodeURIComponent(params)}`;
-        console.log(`payportal.action, fetchLsDocuments endpoint: "${endpoint}"`);
+        //console.log(`payportal.action, fetchLsDocuments endpoint: "${endpoint}"`);
         const response = await fetch(endpoint, {  
             method: 'GET',  
         });  
@@ -321,7 +321,7 @@ export async function processPayment(
             }  
 
             // Case 3: Payment failed or expired - generate new QR  
-            console.log(`Generating new QR for payment ${existingPayportalTrans.payPortalOrder}`);  
+            //console.log(`Generating new QR for payment ${existingPayportalTrans.payPortalOrder}`);  
             const result = await processPaymentByPortal(  
                 payPortalName,  
                 email,  
@@ -524,7 +524,7 @@ export async function processCallback(
             payPortalTrans.$id,  
             {  
                 status: callbackInternalCheckErr? 'failed': 'success',
-                callbackProviderTransId: callbackDataProccess.callbackProviderTransId || '',  
+                callbackProviderTransId: String(callbackDataProccess.callbackProviderTransId) || '',  
                 callbackPaymentTime: payment_time,
                 callbackErrorMessage: callbackInternalCheckErr || '',
                 rawCallback: JSON.stringify(callbackDataProccess.rawCallback) || ''
