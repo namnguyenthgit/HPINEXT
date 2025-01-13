@@ -159,7 +159,7 @@ export const getPPTransByColumnName = async (column_name: string, value: string)
       PAYPORTALTRANS_COLLECTION_ID!,
       [  
         // Make sure to use the exact field name as in your Appwrite collection  
-        Query.equal('column_name', [value])  // Note the array syntax  
+        Query.equal(column_name, [value])  // Note the array syntax  
       ]
     )
     //console.log('Query result:', transactions.documents);

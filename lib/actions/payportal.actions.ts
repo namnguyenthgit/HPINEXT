@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
-import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData, ZaloPayCallback, ZaloPayData } from '@/types';
+import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -465,7 +465,7 @@ export async function parseCallbackData(
                 return {  
                     parsedData : {  
                         payPortalOrder: parsedCallbackData.app_trans_id,  
-                        callbackProviderTransId: parsedCallbackData.app_trans_id,  
+                        callbackProviderTransId: parsedCallbackData.zp_trans_id,  
                         callbackPaymentTime: parsedCallbackData.server_time,  
                         callbackamount: parsedCallbackData.amount,  
                         rawCallback: rawdata.data
@@ -506,28 +506,28 @@ export async function processCallback(
             }
         }
         const callbackDataProccess = parsedCallbackData.parsedData;
+        let callbackInternalCheckErr: string | undefined;
         const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
         const payPortalTrans = await getPPTransByColumnName('payPortalOrder', callbackDataProccess.payPortalOrder);
+
         if (!payPortalTrans) {
-            return {
-                success: false,
-                message: `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`
+            callbackInternalCheckErr = `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`
+    
+        } else {
+            const requestAmount = Number(payPortalTrans.amount);  
+            const callbackAmount = Number(callbackDataProccess.amount);
+            if(requestAmount != callbackAmount){
+                callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request.`;
             }
-        }
-        let callbackInternalCheckErr: string | undefined;
-        const requestAmount = Number(payPortalTrans.amount);  
-        const callbackAmount = Number(callbackDataProccess.amount);
-        if(requestAmount != callbackAmount){
-            callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request.`;
         }
         const updateSuccess = await safeUpdatePayPortalTrans(  
             payPortalTrans.$id,  
             {  
                 status: callbackInternalCheckErr? 'failed': 'success',
-                callbackProviderTransId: callbackDataProccess.app_trans_id,  
+                callbackProviderTransId: callbackDataProccess.callbackProviderTransId || '',  
                 callbackPaymentTime: payment_time,
                 callbackErrorMessage: callbackInternalCheckErr || '',
-                rawCallback: JSON.stringify(callbackDataProccess.rawCallback)
+                rawCallback: JSON.stringify(callbackDataProccess.rawCallback) || ''
             }  
         );  
 
@@ -539,8 +539,8 @@ export async function processCallback(
         }
         
         return {  
-            success: true,  
-            message: 'success'
+            success: callbackInternalCheckErr ? false : true,  
+            message: callbackInternalCheckErr ? callbackInternalCheckErr : 'success'
         }; 
     } catch (error) {  
         return {  
