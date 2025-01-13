@@ -460,14 +460,15 @@ export async function parseCallbackData(
 ): Promise<ParsedPPTCallbackDataAccept> {
     try {
         switch (portal) {  
-            case 'zalopay': 
+            case 'zalopay':
+                const parsedCallbackData = JSON.parse(rawdata.data);
                 return {  
-                    parsedData: {  
-                        payPortalOrder: JSON.stringify(rawdata.data.app_trans_id),
-                        callbackProviderTransId: JSON.stringify(rawdata.data.app_trans_id),
-                        callbackPaymentTime: JSON.stringify(rawdata.data.server_time),
-                        callbackamount: JSON.stringify(rawdata.data.amount),
-                        rawCallback: JSON.stringify(rawdata.data)
+                    parsedData : {  
+                        payPortalOrder: parsedCallbackData.app_trans_id,  
+                        callbackProviderTransId: parsedCallbackData.app_trans_id,  
+                        callbackPaymentTime: parsedCallbackData.server_time,  
+                        callbackamount: parsedCallbackData.amount,  
+                        rawCallback: rawdata.data
                     }
                 }
             default:  
@@ -505,7 +506,6 @@ export async function processCallback(
             }
         }
         const callbackDataProccess = parsedCallbackData.parsedData;
-        console.log('payPortalAction-processCallback updatePPT callbackDataProccess:',callbackDataProccess);
         const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
         const payPortalTrans = await getPPTransByColumnName('payPortalOrder', callbackDataProccess.payPortalOrder);
         if (!payPortalTrans) {

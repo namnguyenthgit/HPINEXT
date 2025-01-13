@@ -478,7 +478,7 @@ interface ZaloPayCallback extends PayPortalCallbackData {
 }
 
 interface RawCallbackData {  
-  data: ZalopayCallbackData;  
+  data: string;  
   mac?: string;  
   type?: number;  
 }
