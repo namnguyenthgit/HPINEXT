@@ -516,7 +516,7 @@ export async function processCallback(
         } else {
             console.log("callbackDataProccess:",callbackDataProccess);
             const requestAmount = Number(payPortalTrans.amount);  
-            const callbackAmount = Number(callbackDataProccess.amount);
+            const callbackAmount = Number(callbackDataProccess.callbackamount);
             if(requestAmount != callbackAmount){
                 callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request:"${requestAmount}"`;
             }
