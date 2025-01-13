@@ -505,6 +505,7 @@ export async function processCallback(
             }
         }
         const callbackDataProccess = parsedCallbackData.parsedData;
+        console.log('payPortalAction-processCallback updatePPT callbackDataProccess:',callbackDataProccess);
         const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
         const payPortalTrans = await getPPTransByColumnName('payPortalOrder', callbackDataProccess.payPortalOrder);
         if (!payPortalTrans) {
@@ -519,9 +520,6 @@ export async function processCallback(
         if(requestAmount != callbackAmount){
             callbackInternalCheckErr = `${portal} Callback amount "${callbackAmount}" do not match with request.`;
         }
-        console.log('payPortalAction-processCallback updatePPT callbackDataProccess.app_trans_id:',callbackDataProccess.app_trans_id);
-        console.log('payPortalAction-processCallback updatePPT payment_time:',payment_time);
-        console.log('payPortalAction-processCallback updatePPT callbackInternalCheckErr:',callbackInternalCheckErr);
         const updateSuccess = await safeUpdatePayPortalTrans(  
             payPortalTrans.$id,  
             {  
