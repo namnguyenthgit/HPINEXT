@@ -36,7 +36,7 @@ export const createPayPortalTrans = async (transaction: CreatePayPortalTransProp
     )
     return parseStringify(newTransaction);
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 
@@ -85,7 +85,7 @@ export const getPayPortalTransByEmail = async ({email}: getPayPortalTransByEmail
 
     return parseStringify(transactions);
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 
@@ -106,7 +106,7 @@ export const getPayPortalTransByDocNo = async (lsDocumentNo: string) => {
     //console.log('Query result:', transactions.documents);
     return payPortalTrans.documents[0] || null;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw error;
   }
 }
@@ -165,7 +165,7 @@ export const getPPTransByColumnName = async (column_name: string, value: string)
     //console.log('Query result:', transactions.documents);
     return payPortalTrans.documents[0] as PayPortalTrans || null;
   } catch (error) {
-    console.log(error);
+    console.error(error);
     throw error;
   }
 }

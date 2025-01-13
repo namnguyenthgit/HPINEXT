@@ -10,7 +10,7 @@ async function fetchLSRetailData<T>(
         const response = await fetch(  
             `/api/lsretail/getdata/${gettype}?value=${encodeURIComponent(value)}`  
         );  
-        console.log(`fetchLSRetailData-${gettype}:${response}`);
+        //console.log(`fetchLSRetailData-${gettype}:${response}`);
         if (!response.ok) {  
             throw new Error(`API error: ${response.status} ${response.statusText}`);  
         }  

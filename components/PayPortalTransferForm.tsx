@@ -225,7 +225,7 @@ const PayPortalTransferForm = ({
         data.lsDocumentNo
       );
 
-      console.log("Response received:", lsTransactionLineRespond);
+      //console.log("Response received:", lsTransactionLineRespond);
 
       if (
         !lsTransactionLineRespond.success ||
