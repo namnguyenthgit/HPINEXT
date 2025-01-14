@@ -30,24 +30,26 @@ export function middleware(request: NextRequest) {
   const isAdminPath = adminPaths.some((path) => pathname.startsWith(path))  
 
   // Get Appwrite session cookie  
-  const appwriteSession = request.cookies.get('appwrite-session')  
+  const hasSession = request.cookies.get('appwrite-session')  
+
+  // If user is authenticated and trying to access auth pages (sign-in, sign-up)  
+  if (hasSession && (pathname === '/sign-in' || pathname === '/sign-up')) {  
+    return NextResponse.redirect(new URL('/', request.url))  
+  }
 
   // Allow access to public paths regardless of authentication  
   if (isPublicPath) {  
     return NextResponse.next()  
   }  
 
-  // If there's no session and trying to access protected route, redirect to login  
-  if (!appwriteSession && !isPublicPath) {  
-    const loginUrl = new URL('/sign-in', request.url)  
-    loginUrl.searchParams.set('redirect', pathname)  
-    return NextResponse.redirect(loginUrl)  
-  }  
-
-  // If it's an admin path and has valid session, allow access  
-  if (isAdminPath && appwriteSession) {  
-    return NextResponse.next()  
-  }  
+  // For admin paths, additional checks could be added here  
+  if (isAdminPath) {  
+    // You could add additional admin role verification here  
+    // For now, just checking for session  
+    if (!hasSession) {  
+      return NextResponse.redirect(new URL('/sign-in', request.url))  
+    }  
+  } 
 
   // For all other routes with valid session  
   return NextResponse.next()  

@@ -11,17 +11,23 @@ import { Form } from "@/components/ui/form";
 import CustomInput from "./CustomInput";
 import { authFormSchema } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, signUp } from "@/lib/actions/user.actions";
 import { appConfig } from "@/lib/appconfig";
 
 const AuthForm = ({ type }: { type: string }) => {
   const apptitle = appConfig.title;
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams?.get("callbackUrl") || "/";
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
   const formSchema = authFormSchema(type);
+
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,27 +47,25 @@ const AuthForm = ({ type }: { type: string }) => {
 
   // 2. Define a submit handler.
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
     setIsLoading(true);
-    setError(null); // Clear any previous errors
+    setError(null);
     try {
-      //sign up with Appwrite & create plain link token
       if (type === "sign-up") {
-        const userData = {
+        const response = await signUp({
           firstName: data.firstName!,
           lastName: data.lastName!,
           email: data.email,
           password: data.password,
-        };
-        const response = await signUp(userData);
+        });
 
-        // Check if the response is an error
-        if (response && "code" in response) {
-          setError(response.message || "Failed to create account");
-          return;
+        if (response.success) {
+          setSignupSuccess(true);
+          setSuccessMessage(
+            response.message ||
+              "Account created successfully! Please verify your email."
+          );
         } else {
-          setUser(response);
+          setError(response.message || "Failed to create account");
         }
       }
 
@@ -70,43 +74,57 @@ const AuthForm = ({ type }: { type: string }) => {
           email: data.email,
           password: data.password,
         });
-        console.log("AuthForm-onSubmit-SignIn response:", response);
-        // Early return if response is undefined or null
+
         if (!response) {
           setError("No response from server");
           return;
         }
 
-        // Handle verification error
-        if ("code" in response && response.type === "email_not_verified") {
-          setError(
-            "Please verify your email before accessing the application."
-          );
-          return;
-        }
-
-        // Handle error response
         if ("code" in response) {
-          setError(response.message || "Invalid credentials");
+          switch (response.type) {
+            case "email_not_verified":
+              setError("Please verify your email before signing in.");
+              break;
+            case "invalid_credentials":
+              setError("Invalid email or password");
+              break;
+            default:
+              setError(response.message || "Authentication failed");
+          }
           return;
         }
 
-        // Only execute these if there was no error
-        setError(null);
-        router.push("/");
+        // Successful login
+        router.refresh(); // Refresh to update auth state
+        router.push(callbackUrl);
       }
     } catch (error) {
       console.log(error);
+      setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
+  };
+  const ErrorMessage = ({ message }: { message: string | null }) => {
+    if (!message) return null;
+    return (
+      <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mt-2">
+        {message}
+      </div>
+    );
   };
 
   return (
     <section className="auth-form">
       <header className="flex flex-col items-center gap-5 md:gap-8">
         <Link href="/" className="cursor-pointer flex items-center gap-1">
-          <Image src="/icons/logo.svg" width={34} height={34} alt="app logo" />
+          <Image
+            src="/icons/logo.svg"
+            width={34}
+            height={34}
+            alt="app logo"
+            priority
+          />
           <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
             {apptitle}
           </h1>
@@ -115,22 +133,20 @@ const AuthForm = ({ type }: { type: string }) => {
       <div className="round-xl rounded-xl shadow-lg border border-gray-200 p-6">
         <div className="flex flex-col items-center gap-1 md:gap-3 pb-4">
           <h1 className="text-24 lg:text-36 font-semibold text-gray-900">
-            {user
-              ? "Sucessfully!!!"
+            {signupSuccess
+              ? "Successfully!!!"
               : type === "sign-in"
               ? "Sign In"
               : "Sign Up"}
           </h1>
           <p className="text-16 font-normal text-gray-600">
-            {user
-              ? "Press continue to enter homepage"
-              : "Please enter your details"}
+            {signupSuccess ? successMessage : "Please enter your details"}
           </p>
         </div>
-        {user ? (
+        {signupSuccess ? (
           <div className="flex flex-col items-center gap-4">
             <Link className="form-link" href="/">
-              continue
+              Back to Sign In
             </Link>
           </div>
         ) : (
@@ -187,7 +203,7 @@ const AuthForm = ({ type }: { type: string }) => {
                       "Sign Up"
                     )}
                   </Button>
-                  {error && <p style={{ color: "red" }}>{error}</p>}{" "}
+                  <ErrorMessage message={error} />
                   {/* Display error message */}
                 </div>
               </form>

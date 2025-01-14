@@ -1,9 +1,4 @@
 import HeaderBox from "@/components/HeaderBox";
-import RecentTransactions from "@/components/RecentTransactions";
-import RightSidebar from "@/components/RightSidebar";
-import TotalBalanceBox from "@/components/TotalBalanceBox";
-import { getAccount, getAccounts } from "@/lib/actions/bank.actions";
-import { getPayPortalTransByEmail } from "@/lib/actions/payportaltrans.actions";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { SearchParamProps } from "@/types";
 import { redirect } from "next/navigation";
@@ -23,29 +18,6 @@ const Home = async (props: SearchParamProps) => {
     redirect("/sign-in");
     // return null;
   }
-
-  const accounts = await getPayPortalTransByEmail({
-    email: loggedIn.$email,
-  });
-
-  if (!accounts) {
-    console.log("No accounts found");
-    return null;
-  }
-
-  const accountsData = accounts?.data;
-
-  // Handle searchParams after async operations
-  const pageParam = params.page;
-  const currentPage =
-    Number(Array.isArray(pageParam) ? pageParam[0] : pageParam) || 1;
-
-  const idParam = params.id;
-  const appwriteItemId =
-    (Array.isArray(idParam) ? idParam[0] : idParam) ||
-    accountsData[0]?.appwriteItemId;
-
-  const account = await getAccount({ appwriteItemId });
 
   return (
     <section className="home">

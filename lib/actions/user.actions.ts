@@ -131,7 +131,8 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
         );  
         
         if (!newUserAccount) {  
-          return {  
+          return {
+            success: false,
             code: 400,  
             type: 'account_creation_failed',  
             message: 'Failed to create user account'  
@@ -139,7 +140,8 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
         }  
       } catch (error: unknown) {  
         const typedError = error as SignInUpError;  
-        return {  
+        return {
+          success: false,
           code: 400,  
           type: 'account_creation_failed',  
           message: typedError?.message || 'Failed to create user account'  
@@ -155,18 +157,25 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
           userId: newUserAccount.$id,  
         }  
       );  
-
-      const session = await account.createEmailPasswordSession(email, password);  
       
-      const cookieStore = await cookies();  
-      cookieStore.set("appwrite-session", session.secret, {  
-        path: "/",  
-        httpOnly: true,  
-        sameSite: "strict",  
-        secure: true,  
-      });  
+      // const session = await account.createEmailPasswordSession(email, password);  
+      
+      // const cookieStore = await cookies();  
+      // cookieStore.set("appwrite-session", session.secret, {  
+      //   path: "/",  
+      //   httpOnly: true,  
+      //   sameSite: "strict",  
+      //   secure: true,  
+      // });  
 
-      return parseStringify(newUser);  
+      // return parseStringify(newUser); 
+      return {
+        success: true,
+        code: 200,  
+        type: 'signup_success',  
+        message: 'Account created successfully. Please verify your email before signing in.',  
+        user: parseStringify(newUser)  
+      };
   } catch (error: unknown) {  
     console.error('Error during signup:', error);  
     return {  
@@ -212,10 +221,16 @@ export async function getLoggedInUser() {
 export const logoutAccount = async () => {
   try {
     const { account } = await createSessionClient();
-    (await cookies()).delete('appwrite-session');
-    await account.deleteSession('current');
+    const cookieStore = await cookies();
+    cookieStore.delete('appwrite-session');
+    try {
+      await account.deleteSession('current');  
+    } catch (sessionError) {
+      console.log("Session deletion:", sessionError);
+    }
+    return { success: true };
   } catch (error) {
     console.error('Error during logout:', error);
-    return null;
+    return { success: false };
   }
 }

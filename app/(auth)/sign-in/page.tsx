@@ -1,33 +1,20 @@
+// app/(auth)/sign-in/page.tsx
 import AuthForm from "@/components/AuthForm";
-import { getLoggedInUser } from "@/lib/actions/user.actions";
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
-const SignIn = async () => {
-  // Check if the user is logged in
-  const loggedIn = await getLoggedInUser();
-  //console.log("Logged in user data:", loggedIn);
-
-  // Check if loggedIn is an error response (has code property)
-  if (loggedIn && "code" in loggedIn) {
-    console.log("SignIn Page get LoggedIn error:", loggedIn);
-    return (
+export default function SignIn() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex-center size-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
       <section className="flex-center size-full max-sm:px-6">
         <AuthForm type="sign-in" />
       </section>
-    );
-  }
-
-  // Only redirect if we have a valid user object with required properties
-  if (loggedIn && loggedIn.$id) {
-    console.log("Valid user found, redirecting...");
-    redirect("/");
-  }
-
-  return (
-    <section className="flex-center size-full max-sm:px-6">
-      <AuthForm type="sign-in" />
-    </section>
+    </Suspense>
   );
-};
-
-export default SignIn;
+}
