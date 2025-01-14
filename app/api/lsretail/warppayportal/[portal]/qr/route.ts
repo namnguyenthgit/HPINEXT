@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";  
-import { processPayment } from "@/lib/actions/payportal.actions";  
-import { parseStringify } from "@/lib/utils";
+import { processPayment } from "@/lib/actions/payportal.actions";
 
 type Props = {  
     params: {  
@@ -85,9 +84,11 @@ export async function POST(request: NextRequest, context: Props) {
                 const validPortalName = validatePortalName(portal);
                 const branchName = merchantType.substring(0,3) || "";
                 const columninfo = {
-                    branch_id: branchName,
-                    store_id: terminalId,
-                    store_name: merchantType,
+                    columninfo: {
+                        branch_id: branchName,
+                        store_id: terminalId,
+                        store_name: merchantType
+                    },
                 };
 
                 // Call processPayment with validated portal name  
