@@ -9,7 +9,7 @@ export async function createSessionClient() {
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!);
 
   const cookieStore = await cookies();
-  const session = cookieStore.get("appwrite-session");
+  const session = cookieStore.get("hpinext-session");
   //const session = cookies.get("appwrite-session");
   if (!session || !session.value) {
     //console.log("No session available");
@@ -45,7 +45,6 @@ export async function createAdminClient() {
     }
   };
 }
-
 //appwrite backup-restore
 // Define base document type  
 interface appwriteDocument {  
@@ -99,7 +98,6 @@ interface appwriteRestoreResult {
   };  
 }
 
-type appwriteDocumentData = Omit<appwriteDocument, '$id' | '$createdAt' | '$updatedAt'>;
 export async function backupDatabaseAndAuth(): Promise<appwriteDatabaseBackup> {  
   try {  
       const admin = await createAdminClient();  

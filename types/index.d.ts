@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-
 declare type SearchParamProps = {
   params: { [key: string]: string };
   searchParams: { [key: string]: string | string[] | undefined };
@@ -540,4 +539,12 @@ export interface LSRetailTransactionLine {
 
 export interface LSRetailTransactionResponse {  
   data: LSRetailTransactionLine[];  
+} 
+
+//auth
+export type UserRole = 'admin' | 'user' | undefined;  
+
+export interface SessionVerificationResult {  
+  isValid: boolean;  
+  error?: string;  
 } 

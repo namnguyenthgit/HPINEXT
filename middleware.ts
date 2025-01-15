@@ -1,16 +1,35 @@
 // middleware.ts  
 import { NextResponse } from 'next/server'  
 import type { NextRequest } from 'next/server'  
+import { RateLimiter } from './lib/rate-limit';
+import { getLoggedInUser, getUserRole } from './lib/actions/user.actions';
+
+//ratelimit
+const limiter = new RateLimiter(); // 60 requests per minute 
+
+// Static paths that don't need authentication checks  
+const staticPaths = [  
+  '_next/static',  
+  '_next/image',  
+  'favicon.ico',  
+  'public',  
+  'assets',  
+  '.png',  
+  '.jpg',  
+  '.jpeg',  
+  '.gif',  
+  '.svg',  
+  '.ico'  
+]; 
 
 // Add paths that don't require authentication  
 export const publicPaths = [  
   '/sign-in',
   '/sign-up',  
-  '/forgot-password',  
-  '/',  
-  '/api/auth',  
-  '/api/webhook',  
-]  
+  //'/',  
+  '/api',
+  '/icons'  
+] as const;
 
 // Add admin paths that should be accessible  
 const adminPaths = [  
@@ -18,55 +37,111 @@ const adminPaths = [
   '/(admin)/backup',  
   '/(admin)/restore',  
   // Add other admin routes as needed  
-]  
+] as const;
 
-export function middleware(request: NextRequest) {  
-  const { pathname } = request.nextUrl  
+const authPaths = [
+  '/payment-transfer',
+  '/transaction-history',
+] as const;
 
-  // Check if the path is public  
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))  
+// Add type safety to path checks  
+function isPathMatch(pathname: string, paths: readonly string[]): boolean {  
+  return paths.some(path => path === pathname || pathname.startsWith(path));  
+}
+
+function getRateLimitHeaders(limit: number, remaining: number, reset: number) {  
+  return {  
+    'Retry-After': `${Math.ceil((reset - Date.now()) / 1000)}`,  
+    'X-RateLimit-Limit': `${limit}`,  
+    'X-RateLimit-Remaining': `${remaining}`,  
+    'X-RateLimit-Reset': `${Math.ceil(reset / 1000)}`  
+  };  
+}  
+
+function getRateLimitResponse(limit: number, remaining: number, reset: number) {  
+  return new NextResponse('Too Many Requests', {  
+    status: 429,  
+    headers: getRateLimitHeaders(limit, remaining, reset)  
+  });  
+}
+
+function addRateLimitHeaders(response: NextResponse, limit: number, remaining: number, reset: number) {  
+  const headers = getRateLimitHeaders(limit, remaining, reset);  
+  Object.entries(headers).forEach(([key, value]) => {  
+    response.headers.set(key, value);  
+  });  
+  return response;  
+}  
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // First check if it's a static path - return early  
+  const isStaticPath = isPathMatch(pathname,staticPaths);
+  if (isStaticPath) {  
+    return NextResponse.next();  
+  }
   
-  // Check if it's an admin path  
-  const isAdminPath = adminPaths.some((path) => pathname.startsWith(path))  
+  const forwardedFor = request.headers.get('x-forwarded-for');  
+  const ip = forwardedFor?.split(',')[0] ??   
+             request.headers.get('x-real-ip') ??   
+             'unknown';  
 
-  // Get Appwrite session cookie  
-  const hasSession = request.cookies.get('appwrite-session')  
+  const isPublicPath = isPathMatch(pathname,publicPaths);
+  // For public paths, only apply basic rate limiting  
+  if (isPublicPath) {  
+    const { limited, remaining, reset, limit } = limiter.check({  
+      ip,  
+      path: pathname  
+    });  
 
-  // If user is authenticated and trying to access auth pages (sign-in, sign-up)  
-  if (hasSession && (pathname === '/sign-in' || pathname === '/sign-up')) {  
-    return NextResponse.redirect(new URL('/', request.url))  
+    if (limited) {  
+      return getRateLimitResponse(limit, remaining, reset);  
+    }  
+
+    return addRateLimitHeaders(NextResponse.next(), limit, remaining, reset);  
   }
 
-  // Allow access to public paths regardless of authentication  
-  if (isPublicPath) {  
-    return NextResponse.next()  
+  const loggedIn = await getLoggedInUser();
+  // Verify session for protected paths  
+  if (!loggedIn) {  
+    const response = NextResponse.redirect(new URL('/sign-in', request.url));  
+    response.cookies.delete('hpinext-session');  
+    return response;  
+  }
+  // Apply rate limiting with user context
+  const userId = loggedIn.$id;
+  const { limited, remaining, reset, limit } = limiter.check({  
+    ip,  
+    userId,  
+    path: pathname  
+  });  
+
+  if (limited) {  
+    return getRateLimitResponse(limit, remaining, reset);  
+  }
+
+  // Handle admin and auth paths
+  const isAdminPath = isPathMatch(pathname,adminPaths);
+  const isAuthPath = isPathMatch(pathname,authPaths);
+  const userRole = await getUserRole();
+  if (isAdminPath|| isAuthPath) {  
+    if (isAdminPath && (userRole !== 'admin')) {  
+      return NextResponse.redirect(new URL('/', request.url));  
+    }  
   }  
 
-  // For admin paths, additional checks could be added here  
-  if (isAdminPath) {  
-    // You could add additional admin role verification here  
-    // For now, just checking for session  
-    if (!hasSession) {  
-      return NextResponse.redirect(new URL('/sign-in', request.url))  
-    }  
-  } 
+  const response = NextResponse.next();  
+  return addRateLimitHeaders(response, limit, remaining, reset);  
 
-  // For all other routes with valid session  
-  return NextResponse.next()  
-}  
+} 
 
 // Update the matcher to include (admin) routes  
 export const config = {  
   matcher: [  
-    /*  
-     * Match all request paths except for the ones starting with:  
-     * - _next/static (static files)  
-     * - _next/image (image optimization files)  
-     * - favicon.ico (favicon file)  
-     * - public folder  
-     * Include (admin) routes  
-     */  
+    // Match all paths except static files  
     '/((?!_next/static|_next/image|favicon.ico|public|assets|.png|.jpg|.jpeg|.gif|.svg|.ico).*)',  
-    '/(admin)/:path*'  // Add this line to explicitly match admin routes  
-  ],  
+    // Explicitly match admin routes  
+    '/(admin)/:path*'  
+  ], 
 }

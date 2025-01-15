@@ -74,7 +74,7 @@ export const signIn = async ({ email, password }: signInProps) => {
       //console.log('useraction-signin response:',session);
       // Use cookies() with await
       const cookieStore = await cookies();
-      cookieStore.set("appwrite-session", session.secret, {
+      cookieStore.set("hpinext-session", session.secret, {
         path: "/",
         httpOnly: true,
         sameSite: "strict",
@@ -171,7 +171,7 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
         const session = await account.createEmailPasswordSession(email, password);
         
         const cookieStore = await cookies();
-        cookieStore.set("appwrite-session", session.secret, {
+        cookieStore.set("hpinext-session", session.secret, {
           path: "/",
           httpOnly: true,
           sameSite: "strict",
@@ -222,7 +222,7 @@ export async function getLoggedInUser() {
   try {
     // Get session from cookies
     const cookieStore = await cookies();
-    const session = cookieStore.get('appwrite-session');
+    const session = cookieStore.get('hpinext-session');
 
     // If no session exists, return null or throw error
     if (!session || !session.value) {
@@ -253,7 +253,7 @@ export async function getLoggedInUser() {
 export const logoutAccount = async () => {
   try {
     const { account } = await createSessionClient();
-    (await cookies()).delete('appwrite-session');
+    (await cookies()).delete('hpinext-session');
     await account.deleteSession('current');
   } catch (error) {
     console.error('Error during logout:', error);

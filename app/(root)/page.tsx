@@ -1,23 +1,15 @@
 import HeaderBox from "@/components/HeaderBox";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import { SearchParamProps } from "@/types";
-import { redirect } from "next/navigation";
 import React from "react";
 
 const Home = async (props: SearchParamProps) => {
   // Get the searchParams after the component starts executing
   const { searchParams } = props;
   const params = await searchParams;
-
+  //console.log("roothome-searchparam:", params);
   // Move this logic after all async operations
   const loggedIn = await getLoggedInUser();
-
-  // Add null check here
-  if (!loggedIn) {
-    console.log("User not logged in, redirecting to sign-in");
-    redirect("/sign-in");
-    // return null;
-  }
 
   return (
     <section className="home">

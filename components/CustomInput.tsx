@@ -5,7 +5,7 @@ import { Control, FieldPath } from "react-hook-form";
 import { z } from "zod";
 import { authFormSchema } from "@/lib/utils";
 
-const formSchema = authFormSchema('sign-up');
+const formSchema = authFormSchema("sign-up");
 
 interface CustomInput {
   control: Control<z.infer<typeof formSchema>>;
@@ -38,6 +38,13 @@ const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
                 placeholder={placeholder}
                 className="input-class"
                 type={type}
+                autoComplete={
+                  type === "password"
+                    ? "current-password"
+                    : type === "email"
+                    ? "email"
+                    : "off"
+                }
                 {...field}
               />
             </FormControl>

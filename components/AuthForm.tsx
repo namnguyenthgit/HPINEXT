@@ -17,6 +17,7 @@ import { appConfig } from "@/lib/appconfig";
 
 const AuthForm = ({ type }: { type: string }) => {
   const apptitle = appConfig.title;
+  const applogo = appConfig.icon;
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") || "/";
@@ -119,11 +120,13 @@ const AuthForm = ({ type }: { type: string }) => {
       <header className="flex flex-col items-center gap-5 md:gap-8">
         <Link href="/" className="cursor-pointer flex items-center gap-1">
           <Image
-            src="/icons/logo.svg"
+            src={applogo}
             width={34}
             height={34}
             alt="app logo"
-            priority
+            priority={true}
+            loading="eager"
+            className="w-auto h-auto"
           />
           <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
             {apptitle}

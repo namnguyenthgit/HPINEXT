@@ -14,6 +14,12 @@ interface SignInUpError {
   message?: string;
 }
 
+interface AppwriteError {  
+  code?: number;  
+  type?: string;  
+  message?: string;  
+}
+
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
 
@@ -74,6 +80,24 @@ export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   }
 }
 
+export async function getUserRole() {  
+  try {  
+    const client = await createSessionClient();  
+    const account = client.account;  
+    
+    // Get current user  
+    const user = await account.get();  
+    
+    // Check if user has admin label  
+    const isAdmin = user.labels?.includes('admin') ?? false;  
+    
+    return isAdmin ? 'admin' : 'user';  
+  } catch (error) {  
+    console.error('Error getting user role:', error);  
+    return 'user'; // Default to user role if there's an error  
+  }  
+}
+
 export const signIn = async ({ email, password }: signInProps) => {
   try {
       //Mutation/ Database / Make fetch
@@ -83,13 +107,15 @@ export const signIn = async ({ email, password }: signInProps) => {
 
       // Use cookies() with await
       const cookieStore = await cookies();
-      cookieStore.set("appwrite-session", session.secret, {
+      cookieStore.set("hpinext-session", session.secret, {
         path: "/",
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "lax",
         secure: true,
+        expires: new Date(session.expire)
       });
-      //console.log('useraction-signin session.userId:',session.userId);
+      //console.log('useraction-signin cookieStore:',cookieStore);
+
       const user = await getUserInfo({ userId: session.userId})
       //console.log('useraction-signin user:',user);
       
@@ -100,7 +126,7 @@ export const signIn = async ({ email, password }: signInProps) => {
 
       return parseStringify(user);
   } catch (error: unknown) {
-    const typedError = error as SignInUpError; // Cast to known type
+    const typedError = error as AppwriteError; // Cast to known type
     console.error('Error:', typedError);
 
     const errorMessage =
@@ -161,7 +187,7 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
       // const session = await account.createEmailPasswordSession(email, password);  
       
       // const cookieStore = await cookies();  
-      // cookieStore.set("appwrite-session", session.secret, {  
+      // cookieStore.set("hpinext-session", session.secret, {  
       //   path: "/",  
       //   httpOnly: true,  
       //   sameSite: "strict",  
@@ -190,18 +216,44 @@ export async function getLoggedInUser() {
   try {
     // Get session from cookies
     const cookieStore = await cookies();
-    const session = cookieStore.get('appwrite-session');
-
+    const sessionCookie  = cookieStore.get('hpinext-session');
     // If no session exists, return null or throw error
-    if (!session || !session.value) {
+    if (!sessionCookie  || !sessionCookie .value) {
       console.log("No session available");
       return null; // Handle this case (e.g., return null or redirect to login page)
     }
+
+    // Decode the JWT cookie value  
+    const decodedSession = JSON.parse(  
+      Buffer.from(sessionCookie.value, 'base64').toString()  
+    );  
+    
+    //console.log('Decoded session:', decodedSession);
 
     const { account } = await createSessionClient();
     // Check if the session is authorized for the required actions
     try {
       const result = await account.get(); // Make sure the session has the correct scope
+      const sessions = await account.listSessions();
+      
+      // Find current session using userId and current flag  
+      const currentSession = sessions.sessions.find(  
+        session => session.userId === decodedSession.id && session.current === true  
+      );  
+
+      if (!currentSession) {  
+        console.log("Current session not found");  
+        return null;  
+      }
+      
+      // Check if session is expired  
+      const isExpired = new Date(currentSession.expire) <= new Date();  
+      if (isExpired) {  
+        console.log("Session has expired");  
+        cookieStore.delete('hpinext-session');  
+        return null;  
+      }
+      
       const user = await getUserInfo({ userId: result.$id})
       if (!result || !result.$id) {  
         console.log("No valid account found");  
@@ -222,7 +274,7 @@ export const logoutAccount = async () => {
   try {
     const { account } = await createSessionClient();
     const cookieStore = await cookies();
-    cookieStore.delete('appwrite-session');
+    cookieStore.delete('hpinext-session');
     try {
       await account.deleteSession('current');  
     } catch (sessionError) {
