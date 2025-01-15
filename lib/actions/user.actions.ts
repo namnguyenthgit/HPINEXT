@@ -104,7 +104,12 @@ export const signIn = async ({ email, password }: signInProps) => {
       const { account } = await createAdminClient();
       const session = await account.createEmailPasswordSession(email, password);
       //console.log('useraction-signin response:',session);
-
+      if (!session) {
+        throw new Error('Failed to create session login');
+      }
+      
+      const result = await cleanupExpiredSessions();
+      console.log('Cleaning up expired sessions...:',result);
       // Use cookies() with await
       const cookieStore = await cookies();
       cookieStore.set("hpinext-session", session.secret, {
@@ -115,16 +120,19 @@ export const signIn = async ({ email, password }: signInProps) => {
         expires: new Date(session.expire)
       });
       //console.log('useraction-signin cookieStore:',cookieStore);
-
-      const user = await getUserInfo({ userId: session.userId})
-      //console.log('useraction-signin user:',user);
-      
-      // Check if user is an error response  
-      if ('code' in user && 'type' in user) {  
-        return user; // Return the error object  
+      try {
+        //const accountInfo = await account.get();  
+        const user = await getUserInfo({ userId: session.userId });  
+        
+        if ('code' in user && 'type' in user) {  
+          return user;  
+        }  
+        return parseStringify(user);
+      } catch (error) {
+        console.log('Server has no session, user Account get error:',error);
+        return null;
       }
-
-      return parseStringify(user);
+      
   } catch (error: unknown) {
     const typedError = error as AppwriteError; // Cast to known type
     console.error('Error:', typedError);
@@ -223,47 +231,14 @@ export async function getLoggedInUser() {
       return null; // Handle this case (e.g., return null or redirect to login page)
     }
 
-    // Decode the JWT cookie value  
-    const decodedSession = JSON.parse(  
-      Buffer.from(sessionCookie.value, 'base64').toString()  
-    );  
-    
-    //console.log('Decoded session:', decodedSession);
-
     const { account } = await createSessionClient();
-    // Check if the session is authorized for the required actions
-    try {
-      const result = await account.get(); // Make sure the session has the correct scope
-      const sessions = await account.listSessions();
-      
-      // Find current session using userId and current flag  
-      const currentSession = sessions.sessions.find(  
-        session => session.userId === decodedSession.id && session.current === true  
-      );  
-
-      if (!currentSession) {  
-        console.log("Current session not found");  
-        return null;  
-      }
-      
-      // Check if session is expired  
-      const isExpired = new Date(currentSession.expire) <= new Date();  
-      if (isExpired) {  
-        console.log("Session has expired");  
-        cookieStore.delete('hpinext-session');  
-        return null;  
-      }
-      
-      const user = await getUserInfo({ userId: result.$id})
-      if (!result || !result.$id) {  
-        console.log("No valid account found");  
-        return null;  
-      }
-      return parseStringify(user);
-    } catch (accountError) {
-      console.error("Error fetching user:", accountError);
-      return null; // Handle session scope or authentication error here
+    const result = await account.get();
+    const user = await getUserInfo({ userId: result.$id})
+    if (!result || !result.$id) {  
+      console.log("No valid account found");  
+      return null;  
     }
+    return parseStringify(user)
   } catch (error) {
     console.error('Error fetching logged in user:', error);
     return null;
@@ -285,4 +260,61 @@ export const logoutAccount = async () => {
     console.error('Error during logout:', error);
     return { success: false };
   }
+}
+
+export async function cleanupExpiredSessions() {  
+  try {  
+    const { account } = await createSessionClient();  
+    
+    // Get all sessions for the current user  
+    const { sessions } = await account.listSessions();  
+    
+    // Get current time  
+    const now = new Date();  
+    
+    // Filter expired sessions that are not current  
+    const expiredSessions = sessions.filter(session => {  
+      const expireDate = new Date(session.expire);  
+      return expireDate <= now && !session.current;  
+    });  
+
+    // Delete expired sessions  
+    const deletionPromises = expiredSessions.map(async (session) => {  
+      try {  
+        await account.deleteSession(session.$id);  
+        return {  
+          sessionId: session.$id,  
+          success: true  
+        };  
+      } catch (error) {  
+        console.error(`Failed to delete session ${session.$id}:`, error);  
+        return {  
+          sessionId: session.$id,  
+          success: false,  
+          error  
+        };  
+      }  
+    });  
+
+    const results = await Promise.allSettled(deletionPromises);  
+    
+    // Count successful deletions  
+    const successfulDeletions = results.filter(  
+      result => result.status === 'fulfilled' && result.value.success  
+    ).length;  
+
+    return {  
+      success: true,  
+      message: `Cleaned up ${successfulDeletions} expired sessions`,  
+      totalExpired: expiredSessions.length,  
+      deletedCount: successfulDeletions  
+    };  
+  } catch (error) {  
+    console.error('Error cleaning up expired sessions:', error);  
+    return {  
+      success: false,  
+      message: 'Failed to clean up expired sessions',  
+      error: error instanceof Error ? error.message : 'Unknown error'  
+    };  
+  }  
 }
