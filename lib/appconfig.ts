@@ -3,6 +3,7 @@ export const appConfig = {
     description: 'Hoang Phuc International management system',
     icon: "/icons/logo.svg",
     baseurl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    cookie_name: 'hpinext-session'
     //others
 } as const;
 

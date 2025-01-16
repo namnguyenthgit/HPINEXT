@@ -1,4 +1,7 @@
 // lib/rate-limit.ts  
+import { kv } from '@vercel/kv';  
+import { UAParser } from 'ua-parser-js';  
+
 interface RateLimitInfo {  
   count: number;  
   firstAttempt: number;  
@@ -6,42 +9,59 @@ interface RateLimitInfo {
 
 type RateLimitKey = {  
   ip: string;  
-  sessionId?: string;  
+  userAgent: string;  
   userId?: string;  
   path: string;  
 }  
 
 export class RateLimiter {  
-  private cache = new Map<string, RateLimitInfo>();  
-  
-  // Different limits for different types of requests  
   private readonly limits = {  
-    auth: { // Login/Register endpoints  
-      authenticated: { requests: 50, windowMs: 60000 }, // 50 requests/minute for logged in users  
-      anonymous: { requests: 15, windowMs: 60000 }  // 15 requests/minute for anonymous  
+    auth: {  
+      authenticated: { requests: 50, windowMs: 60000 },  
+      anonymous: { requests: 15, windowMs: 60000 }  
     },  
-    api: { // API endpoints  
-      authenticated: { requests: 100, windowMs: 60000 }, // 100 requests/minute for logged in  
-      anonymous: { requests: 50, windowMs: 60000 } // 50 requests/minute for anonymous  
+    api: {  
+      authenticated: { requests: 100, windowMs: 60000 },  
+      anonymous: { requests: 50, windowMs: 60000 }  
     },  
     default: {  
-      authenticated: { requests: 200, windowMs: 60000 }, // 200 requests/minute for logged in  
-      anonymous: { requests: 50, windowMs: 60000 } // 50 requests/minute for anonymous  
+      authenticated: { requests: 200, windowMs: 60000 },  
+      anonymous: { requests: 50, windowMs: 60000 }  
     }  
   };  
 
-  constructor() {  
-    // Clean up old entries every minute  
-    setInterval(() => this.cleanup(), 60000);  
+  private getDeviceFingerprint(userAgent: string): string {  
+    const parser = new UAParser(userAgent);  
+    const result = parser.getResult();  
+    
+    // Combine relevant device information  
+    const parts = [  
+      result.browser.name,  
+      result.browser.version,  
+      result.os.name,  
+      result.os.version,  
+      result.device.vendor,  
+      result.device.model,  
+      result.device.type  
+    ].filter(Boolean);  
+
+    return parts.join('|');  
   }  
 
   private getKey(info: RateLimitKey): string {  
-    const parts = [info.ip];  
+    const parts = ['ratelimit'];  
     
-    if (info.sessionId) parts.push(info.sessionId);  
-    if (info.userId) parts.push(info.userId);  
-    parts.push(info.path);  
+    if (info.userId) {  
+      // For authenticated users: combine userId and IP  
+      parts.push(`user:${info.userId}`);  
+      parts.push(`ip:${info.ip}`);  
+    } else {  
+      // For anonymous users: combine IP and device fingerprint  
+      parts.push(`ip:${info.ip}`);  
+      parts.push(`device:${this.getDeviceFingerprint(info.userAgent)}`);  
+    }  
     
+    parts.push(`path:${info.path}`);  
     return parts.join(':');  
   }  
 
@@ -55,61 +75,69 @@ export class RateLimiter {
     return this.limits.default[isAuthenticated ? 'authenticated' : 'anonymous'];  
   }  
 
-  check(info: RateLimitKey): {   
-    limited: boolean;   
-    remaining: number;   
+  async check(info: RateLimitKey): Promise<{  
+    limited: boolean;  
+    remaining: number;  
     reset: number;  
     limit: number;  
-  } {  
+  }> {  
     const key = this.getKey(info);  
     const now = Date.now();  
     const isAuthenticated = Boolean(info.userId);  
     const limits = this.getLimits(info.path, isAuthenticated);  
-    
-    const currentInfo = this.cache.get(key);  
 
-    if (!currentInfo) {  
-      this.cache.set(key, { count: 1, firstAttempt: now });  
-      return {  
-        limited: false,  
-        remaining: limits.requests - 1,  
-        reset: now + limits.windowMs,  
-        limit: limits.requests  
-      };  
-    }  
+    try {  
+      const currentInfo = await kv.get<RateLimitInfo>(key);  
 
-    // Reset if time window has passed  
-    if (now - currentInfo.firstAttempt > limits.windowMs) {  
-      this.cache.set(key, { count: 1, firstAttempt: now });  
-      return {  
-        limited: false,  
-        remaining: limits.requests - 1,  
-        reset: now + limits.windowMs,  
-        limit: limits.requests  
-      };  
-    }  
+      if (!currentInfo) {  
+        const newInfo: RateLimitInfo = { count: 1, firstAttempt: now };  
+        await kv.set(key, newInfo, { px: limits.windowMs });  
 
-    // Increment counter  
-    currentInfo.count += 1;  
-    this.cache.set(key, currentInfo);  
-
-    const remaining = Math.max(0, limits.requests - currentInfo.count);  
-    const reset = currentInfo.firstAttempt + limits.windowMs;  
-
-    return {  
-      limited: currentInfo.count > limits.requests,  
-      remaining,  
-      reset,  
-      limit: limits.requests  
-    };  
-  }  
-
-  private cleanup() {  
-    const now = Date.now();  
-    for (const [key, info] of this.cache.entries()) {  
-      if (now - info.firstAttempt > 60000) { // Clean entries older than 1 minute  
-        this.cache.delete(key);  
+        return {  
+          limited: false,  
+          remaining: limits.requests - 1,  
+          reset: now + limits.windowMs,  
+          limit: limits.requests  
+        };  
       }  
+
+      if (now - currentInfo.firstAttempt > limits.windowMs) {  
+        const newInfo: RateLimitInfo = { count: 1, firstAttempt: now };  
+        await kv.set(key, newInfo, { px: limits.windowMs });  
+
+        return {  
+          limited: false,  
+          remaining: limits.requests - 1,  
+          reset: now + limits.windowMs,  
+          limit: limits.requests  
+        };  
+      }  
+
+      const updatedInfo: RateLimitInfo = {  
+        count: currentInfo.count + 1,  
+        firstAttempt: currentInfo.firstAttempt  
+      };  
+
+      const remainingMs = currentInfo.firstAttempt + limits.windowMs - now;  
+      await kv.set(key, updatedInfo, { px: remainingMs });  
+
+      const remaining = Math.max(0, limits.requests - updatedInfo.count);  
+      const reset = currentInfo.firstAttempt + limits.windowMs;  
+
+      return {  
+        limited: updatedInfo.count > limits.requests,  
+        remaining,  
+        reset,  
+        limit: limits.requests  
+      };  
+    } catch (error) {  
+      console.error('Rate limit check failed:', error);  
+      return {  
+        limited: false,  
+        remaining: limits.requests,  
+        reset: now + limits.windowMs,  
+        limit: limits.requests  
+      };  
     }  
   }  
 }

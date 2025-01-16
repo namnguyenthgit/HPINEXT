@@ -2,14 +2,16 @@
 
 import { Client, Account, Databases, Users, Query , ID } from "node-appwrite";
 import { cookies } from "next/headers";
+import { appConfig } from "../appconfig";
 
+const COOKIE_NAME = appConfig.cookie_name; 
 export async function createSessionClient() {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!);
 
   const cookieStore = await cookies();
-  const session = cookieStore.get("hpinext-session");
+  const session = cookieStore.get(COOKIE_NAME);
   //const session = cookies.get("appwrite-session");
   if (!session || !session.value) {
     //console.log("No session available");

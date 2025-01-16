@@ -7,6 +7,7 @@ import { error } from "console";
 import { appwriteConfig } from "../appwrite/appwrite-config";
 import { parseStringify } from "../utils";
 import { getUserInfoProps, signInProps, SignUpParams } from "@/types";
+import { appConfig } from "../appconfig";
 
 interface SignInUpError {
   code?: number;
@@ -20,8 +21,48 @@ interface AppwriteError {
   message?: string;  
 }
 
+interface SessionInfo {  
+  userId: string;  
+  expires: number;  
+}
+
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
+const COOKIE_NAME = appConfig.cookie_name;
+
+// Token handling functions  
+export const getServerSession = async () => {  
+  try {  
+    const { account } = await createAdminClient();  
+    const session = await account.getSession('current');  
+    
+    return {  
+      userId: session.userId,  
+      expires: new Date(session.expire).getTime()  
+    };  
+  } catch (error) {  
+    console.error('Failed to get server session:', error);  
+    return null;  
+  }  
+};
+
+export const parseSessionToken = async(token: string): Promise<SessionInfo | null> => {  
+  try {  
+    // The token we stored is in format: { id: string, secret: string }  
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');  
+    const data = JSON.parse(decoded);  
+    
+    return {  
+      userId: data.id,  
+      // Since we don't have expiration in the token,   
+      // we'll use the cookie's expiration time  
+      expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours from now  
+    };  
+  } catch (error) {  
+    console.error('Failed to parse session token:', error);  
+    return null;  
+  }  
+};
 
 // Get all users  
 export const getAllUsers = async () => {  
@@ -103,6 +144,7 @@ export const signIn = async ({ email, password }: signInProps) => {
       //Mutation/ Database / Make fetch
       const { account } = await createAdminClient();
       const session = await account.createEmailPasswordSession(email, password);
+      //console.error('signIn createEmailPasswordSession');
       //console.log('useraction-signin response:',session);
       if (!session) {
         throw new Error('Failed to create session login');
@@ -110,7 +152,7 @@ export const signIn = async ({ email, password }: signInProps) => {
       
       // Use cookies() with await
       const cookieStore = await cookies();
-      cookieStore.set("hpinext-session", session.secret, {
+      cookieStore.set(COOKIE_NAME, session.secret, {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
@@ -193,7 +235,7 @@ export const signUp = async ({password, ...userData} : SignUpParams) => {
       // const session = await account.createEmailPasswordSession(email, password);  
       
       // const cookieStore = await cookies();  
-      // cookieStore.set("hpinext-session", session.secret, {  
+      // cookieStore.set(COOKIE_NAME, session.secret, {  
       //   path: "/",  
       //   httpOnly: true,  
       //   sameSite: "strict",  
@@ -222,7 +264,7 @@ export async function getLoggedInUser() {
   try {
     // Get session from cookies
     const cookieStore = await cookies();
-    const sessionCookie  = cookieStore.get('hpinext-session');
+    const sessionCookie  = cookieStore.get(COOKIE_NAME);
     // If no session exists, return null or throw error
     if (!sessionCookie  || !sessionCookie .value) {
       console.log("No session available");
@@ -247,7 +289,7 @@ export const logoutAccount = async () => {
   try {
     const { account } = await createSessionClient();
     const cookieStore = await cookies();
-    cookieStore.delete('hpinext-session');
+    cookieStore.delete(COOKIE_NAME);
     try {
       await account.deleteSession('current');  
     } catch (sessionError) {
