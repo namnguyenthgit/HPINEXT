@@ -41,7 +41,7 @@ export const getAllUsers = async () => {
 
 export const getUserInfo = async ({ userId }: getUserInfoProps) => {
   try {
-    const { account, database, user } = await createAdminClient();
+    const { database, user } = await createAdminClient();
     const userData = await database.listDocuments(
       DATABASE_ID!,
       USER_COLLECTION_ID!,
@@ -108,8 +108,6 @@ export const signIn = async ({ email, password }: signInProps) => {
         throw new Error('Failed to create session login');
       }
       
-      const result = await cleanupExpiredSessions();
-      console.log('Cleaning up expired sessions...:',result);
       // Use cookies() with await
       const cookieStore = await cookies();
       cookieStore.set("hpinext-session", session.secret, {
@@ -260,61 +258,4 @@ export const logoutAccount = async () => {
     console.error('Error during logout:', error);
     return { success: false };
   }
-}
-
-export async function cleanupExpiredSessions() {  
-  try {  
-    const { account } = await createSessionClient();  
-    
-    // Get all sessions for the current user  
-    const { sessions } = await account.listSessions();  
-    
-    // Get current time  
-    const now = new Date();  
-    
-    // Filter expired sessions that are not current  
-    const expiredSessions = sessions.filter(session => {  
-      const expireDate = new Date(session.expire);  
-      return expireDate <= now && !session.current;  
-    });  
-
-    // Delete expired sessions  
-    const deletionPromises = expiredSessions.map(async (session) => {  
-      try {  
-        await account.deleteSession(session.$id);  
-        return {  
-          sessionId: session.$id,  
-          success: true  
-        };  
-      } catch (error) {  
-        console.error(`Failed to delete session ${session.$id}:`, error);  
-        return {  
-          sessionId: session.$id,  
-          success: false,  
-          error  
-        };  
-      }  
-    });  
-
-    const results = await Promise.allSettled(deletionPromises);  
-    
-    // Count successful deletions  
-    const successfulDeletions = results.filter(  
-      result => result.status === 'fulfilled' && result.value.success  
-    ).length;  
-
-    return {  
-      success: true,  
-      message: `Cleaned up ${successfulDeletions} expired sessions`,  
-      totalExpired: expiredSessions.length,  
-      deletedCount: successfulDeletions  
-    };  
-  } catch (error) {  
-    console.error('Error cleaning up expired sessions:', error);  
-    return {  
-      success: false,  
-      message: 'Failed to clean up expired sessions',  
-      error: error instanceof Error ? error.message : 'Unknown error'  
-    };  
-  }  
 }

@@ -79,7 +79,12 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
             <TableCell className="px-2">
               <div className="max-w-[200px]">{transaction.terminalId}</div>
             </TableCell>
-            <TableCell className="px-2">{transaction.lsDocumentNo}</TableCell>
+            <TableCell className="px-2 font-bold">
+              <RawCopy
+                value={transaction.lsDocumentNo}
+                title={transaction.lsDocumentNo}
+              />
+            </TableCell>
             <TableCell className="px-2">{transaction.channel}</TableCell>
             <TableCell className="px-2">
               <RawCopy
@@ -89,11 +94,25 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
             </TableCell>
             <TableCell className="px-2">
               <Link
-                href={transaction.payPortalPaymentUrl}
+                href={
+                  transaction.status === "processing"
+                    ? transaction.payPortalPaymentUrl
+                    : "#"
+                }
                 target="_blank"
-                className="cursor-pointer"
+                onClick={(e) => {
+                  if (transaction.status !== "processing") {
+                    e.preventDefault();
+                  }
+                }}
+                className={cn(
+                  "cursor-pointer",
+                  transaction.status === "processing"
+                    ? "text-blue-600 hover:underline"
+                    : "text-gray-400 cursor-not-allowed"
+                )}
               >
-                <h1 className="text-blue-600 hover:underline">Link</h1>
+                <h1>Payment Link</h1>
               </Link>
             </TableCell>
             <TableCell
@@ -113,8 +132,10 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
             </TableCell>
             <TableCell className="px-2 max-md:hidden">
               {transaction.callbackPaymentTime &&
-                formatDateTime(new Date(transaction.callbackPaymentTime))
-                  .dateTime}
+                formatDateTime(
+                  new Date(transaction.callbackPaymentTime),
+                  "vi-VN"
+                ).dateTime}
             </TableCell>
             <TableCell className="px-2 max-md:hidden">
               {transaction.$createdAt &&
