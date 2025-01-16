@@ -157,7 +157,10 @@ export const signIn = async ({ email, password }: signInProps) => {
         httpOnly: true,
         sameSite: "lax",
         secure: true,
-        expires: new Date(session.expire)
+        expires: new Date(session.expire),
+        domain: process.env.NEXT_PUBLIC_SITE_URL   
+        ? new URL(process.env.NEXT_PUBLIC_SITE_URL).hostname   
+        : undefined,        
       });
       //console.log('useraction-signin cookieStore:',cookieStore);
       try {
