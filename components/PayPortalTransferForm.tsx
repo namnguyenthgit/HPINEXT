@@ -107,8 +107,10 @@ const PayPortalTransferForm = ({
     message: string | null;
   }>({ type: null, message: null });
   const ITEM_HEIGHT = 36; // Height of each item in pixels  
-  const VISIBLE_ITEMS = 4; // Number of items to show before scrolling  
+  const MAX_VISIBLE_ITEMS = 4; // Number of items to show before scrolling  
   const PADDING = 8;
+  const MIN_HEIGHT = ITEM_HEIGHT + (PADDING * 2);
+
   const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
@@ -130,6 +132,12 @@ const PayPortalTransferForm = ({
       amount: "",
     },
   });
+
+  // Helper function to calculate content height  
+  const getContentHeight = (itemCount: number): number => {  
+    const height = Math.min(itemCount, MAX_VISIBLE_ITEMS) * ITEM_HEIGHT + (PADDING * 2);  
+    return Math.max(height, MIN_HEIGHT);  
+  };
 
   const fetchDocuments = useCallback(async () => {
     if (!storeNo) return;
@@ -409,9 +417,12 @@ const PayPortalTransferForm = ({
                     <ScrollArea
                       className="overflow-auto rounded-b-md"
                       style={{  
-                        height: `${(ITEM_HEIGHT * VISIBLE_ITEMS) + (PADDING * 2)}px`,  
-                        maxHeight: `${(ITEM_HEIGHT * VISIBLE_ITEMS) + (PADDING * 2)}px`  
-                      }}
+                        height: `${getContentHeight(  
+                          isLoadingDocuments || documentError   
+                            ? 1 // Show one item height for loading/error states  
+                            : filteredDocuments.length // Use actual number of items  
+                        )}px`  
+                      }}  
                       onWheelCapture={(e) => e.stopPropagation()}
                     >
                       {isLoadingDocuments ? (
