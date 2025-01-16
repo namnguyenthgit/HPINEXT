@@ -57,7 +57,6 @@ interface ZaloPaySuccessResponse extends ZaloPayResponse {
 // Debounce hook
 function useDebounce<T>(value: T, delay: number = 300): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(value);
@@ -113,6 +112,7 @@ const PayPortalTransferForm = ({
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [showManualRedirect, setShowManualRedirect] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
 
@@ -167,15 +167,32 @@ const PayPortalTransferForm = ({
     );
   }, [documentNumbers, debouncedSearchQuery]);
 
+  const handleInputFocus = () => {
+    setIsInputFocused(true);
+    setIsSelectOpen(true); // Ensure select stays open
+  };
+
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Check if the related target is within the select content
+    const isSelectContent = e.relatedTarget?.closest('[role="listbox"]');
+    if (!isSelectContent) {
+      setIsInputFocused(false);
+    }
+  };
+
   const handleSelectOpen = useCallback(
     (open: boolean) => {
+      // Don't close if input is focused
+      if (!open && isInputFocused) {
+        return;
+      }
+
       setIsSelectOpen(open);
       if (open) {
-        // Remove the documentNumbers.length === 0 condition
         void fetchDocuments();
       }
     },
-    [fetchDocuments]
+    [fetchDocuments, isInputFocused]
   );
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -358,13 +375,21 @@ const PayPortalTransferForm = ({
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           onKeyDown={handleSearchKeyDown}
+                          onFocus={handleInputFocus}
+                          onBlur={handleInputBlur}
                           className="pl-8 h-9"
                         />
                       </div>
                     </div>
 
                     {/* Results Area */}
-                    <ScrollArea className="max-h-[300px] overflow-auto">
+                    <ScrollArea
+                      className="max-h-[300px] overflow-auto"
+                      onTouchStart={(e) => {
+                        // Prevent scroll events from bubbling
+                        e.stopPropagation();
+                      }}
+                    >
                       {isLoadingDocuments ? (
                         <div className="flex items-center justify-center p-4 space-x-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
