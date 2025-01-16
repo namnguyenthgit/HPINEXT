@@ -155,7 +155,7 @@ export const signIn = async ({ email, password }: signInProps) => {
       cookieStore.set(COOKIE_NAME, session.secret, {
         path: "/",
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "lax",
         secure: true,
         expires: new Date(session.expire),
         domain: process.env.NEXT_PUBLIC_SITE_URL   
