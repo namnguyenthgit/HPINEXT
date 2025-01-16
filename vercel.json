@@ -7,49 +7,5 @@
         "Access-Control-Allow-Origin": "*"  
       }  
     } 
-  ],
-  "headers": [  
-    {  
-      "source": "/(.*)",  
-      "headers": [  
-        {  
-          "key": "x-vercel-protection",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-timezone",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-latitude",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-longitude",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-country-region",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-country",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-ip-city",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-cache",  
-          "value": ""  
-        },  
-        {  
-          "key": "x-vercel-id",  
-          "value": ""  
-        }  
-      ]  
-    }  
-  ],  
-  "cleanUrls": true  
+  ]  
 }

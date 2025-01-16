@@ -73,7 +73,7 @@ function addRateLimitHeaders(response: NextResponse, limit: number, remaining: n
 } 
 
 export async function middleware(request: NextRequest) {  
-  const { pathname } = request.nextUrl;
+  const { pathname } = request.nextUrl;  
 
   // Check static paths first  
   if (isPathMatch(pathname, staticPaths)) {  
@@ -133,44 +133,14 @@ export async function middleware(request: NextRequest) {
     }  
 
     // All checks passed, proceed with the request  
-    const response = NextResponse.next();
-    // Remove all Vercel-related headers  
-    const headers = new Headers(response.headers)  
-    for (const [key] of headers.entries()) {  
-      if (  
-        key.toLowerCase().startsWith('x-vercel') ||  
-        key.toLowerCase() === 'server' ||  
-        key.toLowerCase() === 'x-powered-by' ||  
-        key.toLowerCase() === 'link'  
-      ) {  
-        headers.delete(key)  
-      }  
-    }  
-
-    // Set empty server header  
-    headers.set('server', '')
+    const response = NextResponse.next();  
     return addRateLimitHeaders(response, limit, remaining, reset);  
 
   } catch (error) {  
     console.error('Middleware error:', error);  
     
     // On error, redirect to sign-in and clear session  
-    const response = NextResponse.redirect(new URL('/sign-in', request.url)); 
-    // Remove all Vercel-related headers  
-    const headers = new Headers(response.headers)  
-    for (const [key] of headers.entries()) {  
-      if (  
-        key.toLowerCase().startsWith('x-vercel') ||  
-        key.toLowerCase() === 'server' ||  
-        key.toLowerCase() === 'x-powered-by' ||  
-        key.toLowerCase() === 'link'  
-      ) {  
-        headers.delete(key)  
-      }  
-    }  
-
-    // Set empty server header  
-    headers.set('server', '') 
+    const response = NextResponse.redirect(new URL('/sign-in', request.url));  
     response.cookies.delete(COOKIE_NAME);  
     return response;  
   }  
