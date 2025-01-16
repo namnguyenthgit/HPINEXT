@@ -96,7 +96,9 @@ const AuthForm = ({ type }: { type: string }) => {
         }
 
         // Successful login
-        router.refresh(); // Refresh to update auth state
+        // router.refresh(); // Refresh to update auth state
+        // router.push(callbackUrl);
+        //console.log("callbackUrl", callbackUrl);
         router.push(callbackUrl);
       }
     } catch (error) {
