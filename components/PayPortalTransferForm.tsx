@@ -106,7 +106,9 @@ const PayPortalTransferForm = ({
     type: "success" | "error" | "warning" | null;
     message: string | null;
   }>({ type: null, message: null });
-
+  const ITEM_HEIGHT = 36; // Height of each item in pixels  
+  const VISIBLE_ITEMS = 4; // Number of items to show before scrolling  
+  const PADDING = 8;
   const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [documentError, setDocumentError] = useState<string | null>(null);
@@ -350,12 +352,16 @@ const PayPortalTransferForm = ({
                     <SelectValue placeholder="Select document number" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
-                  <div className="bg-white">
+                <SelectContent 
+                  className="min-w-[300px]"
+                  position="popper"
+                  sideOffset={5}
+                >
+                  <div className="bg-white rounded-md shadow-sm">
                     {/* Search Input */}
-                    <div className="sticky top-0 p-2 bg-white border-b">
+                    <div className="sticky top-0 p-2 bg-white border-b z-10 rounded-t-md">
                       <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                         <Input
                           ref={inputRef}
                           placeholder="Search documents..."
@@ -379,7 +385,7 @@ const PayPortalTransferForm = ({
                           onBlur={(e) => {  
                             e.stopPropagation();
                             const currentInput = inputRef.current;
-                            
+
                             // Create cleanup function  
                             const timeoutId = setTimeout(() => {  
                               // Safety check if component is still mounted and input exists  
@@ -394,14 +400,18 @@ const PayPortalTransferForm = ({
                             // Cleanup timeout on next blur or unmount  
                             return () => clearTimeout(timeoutId);
                           }}
-                          className="pl-8 h-9"
+                          className="pl-8 h-9 w-full bg-transparent"
                         />
                       </div>
                     </div>
 
                     {/* Results Area */}
                     <ScrollArea
-                      className="max-h-[300px] overflow-auto"
+                      className="overflow-auto rounded-b-md"
+                      style={{  
+                        height: `${(ITEM_HEIGHT * VISIBLE_ITEMS) + (PADDING * 2)}px`,  
+                        maxHeight: `${(ITEM_HEIGHT * VISIBLE_ITEMS) + (PADDING * 2)}px`  
+                      }}
                       onWheelCapture={(e) => e.stopPropagation()}
                     >
                       {isLoadingDocuments ? (
