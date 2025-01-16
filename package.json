@@ -33,6 +33,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^3.6.0",
     "dwolla-v2": "^3.4.0",
+    "framer-motion": "^11.18.0",
     "lucide-react": "^0.456.0",
     "next": "^15.0.3",
     "node-appwrite": "^14.1.0",

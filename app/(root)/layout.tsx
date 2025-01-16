@@ -1,4 +1,5 @@
 import MobileNav from "@/components/MobileNav";
+import { TransitionProvider } from "@/components/PageTransition";
 import Sidebar from "@/components/Sidebar";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
 import Image from "next/image";
@@ -24,8 +25,7 @@ export default async function RootLayout({
         </div>
         <div className="flex-1 overflow-y-auto">
           {" "}
-          {/* Add this wrapper */}
-          {children}
+          <TransitionProvider>{children}</TransitionProvider>
         </div>
       </div>
     </main>

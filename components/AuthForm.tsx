@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,7 +22,7 @@ const AuthForm = ({ type }: { type: string }) => {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get("callbackUrl") || "/";
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -48,65 +48,64 @@ const AuthForm = ({ type }: { type: string }) => {
 
   // 2. Define a submit handler.
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
-    setIsLoading(true);
     setError(null);
-    try {
-      if (type === "sign-up") {
-        const response = await signUp({
-          firstName: data.firstName!,
-          lastName: data.lastName!,
-          email: data.email,
-          password: data.password,
-        });
+    startTransition(async () => {
+      try {
+        if (type === "sign-up") {
+          const response = await signUp({
+            firstName: data.firstName!,
+            lastName: data.lastName!,
+            email: data.email,
+            password: data.password,
+          });
 
-        if (response.success) {
-          setSignupSuccess(true);
-          setSuccessMessage(
-            response.message ||
-              "Account created successfully! Please verify your email."
-          );
-        } else {
-          setError(response.message || "Failed to create account");
-        }
-      }
-
-      if (type === "sign-in") {
-        const response = await signIn({
-          email: data.email,
-          password: data.password,
-        });
-
-        if (!response) {
-          setError("No response from server");
-          return;
-        }
-
-        if ("code" in response) {
-          switch (response.type) {
-            case "email_not_verified":
-              setError("Please verify your email before signing in.");
-              break;
-            case "invalid_credentials":
-              setError("Invalid email or password");
-              break;
-            default:
-              setError(response.message || "Authentication failed");
+          if (response.success) {
+            setSignupSuccess(true);
+            setSuccessMessage(
+              response.message ||
+                "Account created successfully! Please verify your email."
+            );
+          } else {
+            setError(response.message || "Failed to create account");
           }
-          return;
         }
 
-        // Successful login
-        // router.refresh(); // Refresh to update auth state
-        // router.push(callbackUrl);
-        //console.log("callbackUrl", callbackUrl);
-        router.push(callbackUrl);
+        if (type === "sign-in") {
+          const response = await signIn({
+            email: data.email,
+            password: data.password,
+          });
+
+          if (!response) {
+            setError("No response from server");
+            return;
+          }
+
+          if ("code" in response) {
+            switch (response.type) {
+              case "email_not_verified":
+                setError("Please verify your email before signing in.");
+                break;
+              case "invalid_credentials":
+                setError("Invalid email or password");
+                break;
+              default:
+                setError(response.message || "Authentication failed");
+            }
+            return;
+          }
+
+          // Successful login
+          // router.refresh(); // Refresh to update auth state
+          // router.push(callbackUrl);
+          //console.log("callbackUrl", callbackUrl);
+          router.push(callbackUrl);
+        }
+      } catch (error) {
+        console.log(error);
+        setError("An unexpected error occurred");
       }
-    } catch (error) {
-      console.log(error);
-      setError("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
-    }
+    });
   };
   const ErrorMessage = ({ message }: { message: string | null }) => {
     if (!message) return null;
@@ -194,10 +193,10 @@ const AuthForm = ({ type }: { type: string }) => {
                 <div className="flex flex-col gap-4">
                   <Button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isPending}
                     className="form-btn"
                   >
-                    {isLoading ? (
+                    {isPending ? (
                       <>
                         <Loader2 size={20} className="animate-spin" /> &nbsp;
                         Loading...
