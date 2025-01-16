@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -113,8 +113,10 @@ const PayPortalTransferForm = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [showManualRedirect, setShowManualRedirect] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
+
 
   const debouncedSearchQuery = useDebounce(searchQuery);
 
@@ -167,19 +169,6 @@ const PayPortalTransferForm = ({
     );
   }, [documentNumbers, debouncedSearchQuery]);
 
-  const handleInputFocus = () => {
-    setIsInputFocused(true);
-    setIsSelectOpen(true); // Ensure select stays open
-  };
-
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Check if the related target is within the select content
-    const isSelectContent = e.relatedTarget?.closest('[role="listbox"]');
-    if (!isSelectContent) {
-      setIsInputFocused(false);
-    }
-  };
-
   const handleSelectOpen = useCallback(
     (open: boolean) => {
       // Don't close if input is focused
@@ -194,13 +183,6 @@ const PayPortalTransferForm = ({
     },
     [fetchDocuments, isInputFocused]
   );
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && filteredDocuments.length === 1) {
-      form.setValue("lsDocumentNo", filteredDocuments[0]);
-      setIsSelectOpen(false);
-    }
-  };
 
   // For external URLs, use window.open instead of router.push
   const handlePaymentRedirect = (url: string) => {
@@ -354,7 +336,11 @@ const PayPortalTransferForm = ({
               <FormLabel>Document Number</FormLabel>
               <Select
                 disabled={isLoading}
-                onValueChange={field.onChange}
+                onValueChange={(value) => {  
+                  field.onChange(value);  
+                  setIsSelectOpen(false);  
+                  setSearchQuery(''); // Reset search after selection  
+                }}
                 value={field.value}
                 open={isSelectOpen}
                 onOpenChange={handleSelectOpen}
@@ -371,12 +357,43 @@ const PayPortalTransferForm = ({
                       <div className="relative">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
+                          ref={inputRef}
                           placeholder="Search documents..."
                           value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onKeyDown={handleSearchKeyDown}
-                          onFocus={handleInputFocus}
-                          onBlur={handleInputBlur}
+                          onChange={(e) => {  
+                            e.stopPropagation();  
+                            setSearchQuery(e.target.value);  
+                          }}
+                          onKeyDown={(e) => {  
+                            e.stopPropagation(); 
+                            if (e.key === 'Enter' && filteredDocuments.length === 1) {  
+                              field.onChange(filteredDocuments[0]);  
+                              setIsSelectOpen(false);  
+                              setSearchQuery('');  
+                            }  
+                          }}
+                          onFocus={(e) => {  
+                            e.stopPropagation();  
+                            setIsInputFocused(true);  
+                          }}
+                          onBlur={(e) => {  
+                            e.stopPropagation();
+                            const currentInput = inputRef.current;
+                            
+                            // Create cleanup function  
+                            const timeoutId = setTimeout(() => {  
+                              // Safety check if component is still mounted and input exists  
+                              if (currentInput && document.body.contains(currentInput)) {  
+                                const activeElement = document.activeElement;  
+                                if (activeElement && !currentInput.contains(activeElement)) {  
+                                  setIsInputFocused(false);  
+                                }  
+                              }  
+                            }, 100);
+
+                            // Cleanup timeout on next blur or unmount  
+                            return () => clearTimeout(timeoutId);
+                          }}
                           className="pl-8 h-9"
                         />
                       </div>
@@ -385,10 +402,7 @@ const PayPortalTransferForm = ({
                     {/* Results Area */}
                     <ScrollArea
                       className="max-h-[300px] overflow-auto"
-                      onTouchStart={(e) => {
-                        // Prevent scroll events from bubbling
-                        e.stopPropagation();
-                      }}
+                      onWheelCapture={(e) => e.stopPropagation()}
                     >
                       {isLoadingDocuments ? (
                         <div className="flex items-center justify-center p-4 space-x-2">
@@ -407,7 +421,18 @@ const PayPortalTransferForm = ({
                         </div>
                       ) : (
                         filteredDocuments.map((docNo) => (
-                          <SelectItem key={docNo} value={docNo}>
+                          <SelectItem 
+                            key={docNo}  
+                            value={docNo}  
+                            className="cursor-pointer hover:bg-gray-100 rounded-sm"  
+                            onMouseDown={(e) => {  
+                              e.preventDefault();  
+                              e.stopPropagation();  
+                              field.onChange(docNo);  
+                              setIsSelectOpen(false);  
+                              setSearchQuery('');
+                            }}
+                          >
                             <HighlightedText
                               text={docNo}
                               highlight={searchQuery}
