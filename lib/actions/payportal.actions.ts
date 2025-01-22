@@ -137,13 +137,15 @@ export async function queryPayment(
                 }  
             );  
         } else if (paymentStatus.return_code === 3) {  
-            // Payment processing  
-            await safeUpdatePayPortalTrans(  
-                existingPayportalTrans.$id,  
-                {  
-                    status: 'processing',
-                }  
-            );  
+            if (existingPayportalTrans.status != 'processing') {
+                // Payment processing  
+                await safeUpdatePayPortalTrans(  
+                    existingPayportalTrans.$id,  
+                    {  
+                        status: 'processing',
+                    }  
+                );  
+            }            
         } else {  
             // Payment failed or expired  
             await safeUpdatePayPortalTrans(  
