@@ -44,8 +44,10 @@ export const subcribePayportalTrans = (
     (response: RealtimeResponseEvent<RealtimePayPortalTrans>) => {  
       const transaction = response.payload;  
       
-      // Only process transactions for the relevant stores  
-      if (!storeIds.includes(transaction.terminalId)) {  
+      // If storeIds has "0", process all transactions  
+      // Otherwise check if transaction's terminalId matches any of the storeIds  
+      const hasZeroStore = storeIds.some(store => store === "0");  
+      if (!hasZeroStore && !storeIds.includes(transaction.terminalId)) {  
         return;  
       }  
 
