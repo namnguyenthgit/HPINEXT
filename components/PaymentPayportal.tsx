@@ -64,7 +64,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
   // Function to load transactions
   const loadTransactions = async (storeArray: string[]): Promise<void> => {
     try {
-      const response = await getPayPortalTransByStores(storeArray);
+      const response = await getPayPortalTransByStores(storeArray, 50);
       if (response && Array.isArray(response.documents)) {
         setTransactions(response.documents);
       }

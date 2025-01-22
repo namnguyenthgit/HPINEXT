@@ -111,7 +111,7 @@ export const getPayPortalTransByDocNo = async (lsDocumentNo: string) => {
   }
 }
 
-export const getPayPortalTransByStores = async (storeList: string[]): Promise<appwritePayportalTransResponse> => {  
+export const getPayPortalTransByStores = async (storeList: string[], limit?: number): Promise<appwritePayportalTransResponse> => {  
   try {  
     const { database } = await createAdminClient();  
 
@@ -125,15 +125,25 @@ export const getPayPortalTransByStores = async (storeList: string[]): Promise<ap
       : [storeList];  
 
     //console.log("Processing stores:", stores);  
+    const hasZeroStore = stores.some(store => store === '0');
+
+    const baseParams = hasZeroStore  
+      ? [Query.orderDesc('$createdAt')]  
+      : [  
+          Query.equal('terminalId', stores),  
+          Query.orderDesc('$createdAt')  
+        ]; 
+    
+    // Combine base params with limit  
+    const queryParams = [  
+      ...baseParams,  
+      typeof limit === 'number' ? Query.limit(limit) : Query.limit(100)  
+    ];
 
     const transactions = await database.listDocuments(  
       DATABASE_ID!,  
       PAYPORTALTRANS_COLLECTION_ID!,  
-      [  
-        Query.equal('terminalId', stores),  
-        Query.orderDesc('$createdAt'),  
-        Query.limit(100)  
-      ]  
+      queryParams
     );  
 
     //console.log("Query result:", transactions);  

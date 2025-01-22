@@ -51,7 +51,7 @@ export const parseSessionToken = async(token: string): Promise<SessionInfo | nul
     // The token we stored is in format: { id: string, secret: string }  
     const decoded = Buffer.from(token, 'base64').toString('utf-8');  
     const data = JSON.parse(decoded);  
-    
+    //console.log('useraction-parseSessionToken-decodedtoken:', JSON.stringify(data, null, 2));
     return {  
       userId: data.id,  
       // Since we don't have expiration in the token,   
@@ -283,7 +283,7 @@ export async function getLoggedInUser() {
     }
     return parseStringify(user)
   } catch (error) {
-    console.error('Error fetching logged in user:', error);
+    console.error('While user.action getLoggedInUser Internal server error:', error);
     return null;
   }
 }
