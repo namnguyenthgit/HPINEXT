@@ -4,6 +4,8 @@ declare type SearchParamProps = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
+export type tableSelectLimitOption = 50 | 75 | 100 | 200 | "all";  
+
 // ========================================
 
 declare type SignUpParams = {

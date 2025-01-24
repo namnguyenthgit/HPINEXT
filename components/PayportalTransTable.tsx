@@ -86,10 +86,13 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
               />
             </TableCell>
             <TableCell className="px-2">{transaction.channel}</TableCell>
-            <TableCell className="px-2">
+            <TableCell className="font-bold px-2">
               <RawCopy
                 value={transaction.payPortalOrder}
-                title="Portal Order No"
+                title={
+                  transaction.payPortalOrder?.substring(11, 18) ||
+                  "PayPortal Order No"
+                }
               />
             </TableCell>
             <TableCell className="px-2">

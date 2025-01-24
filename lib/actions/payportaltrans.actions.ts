@@ -115,46 +115,76 @@ export const getPayPortalTransByStores = async (storeList: string[], limit?: num
   try {  
     const { database } = await createAdminClient();  
 
-    //console.log("Original storeList:", storeList);  
-
-    // Ensure we have an array of individual store IDs  
     const stores: string[] = Array.isArray(storeList)   
       ? storeList[0].includes(',')  
         ? storeList[0].split(',').map((s: string) => s.trim())  
         : storeList  
       : [storeList];  
 
-    //console.log("Processing stores:", stores);  
-    const hasZeroStore = stores.some(store => store === '0');
+    const hasZeroStore = stores.some(store => store === '0');  
 
     const baseParams = hasZeroStore  
       ? [Query.orderDesc('$createdAt')]  
       : [  
           Query.equal('terminalId', stores),  
           Query.orderDesc('$createdAt')  
-        ]; 
-    
-    // Combine base params with limit  
-    const queryParams = [  
-      ...baseParams,  
-      typeof limit === 'number' ? Query.limit(limit) : Query.limit(100)  
-    ];
+        ];   
 
-    const transactions = await database.listDocuments(  
-      DATABASE_ID!,  
-      PAYPORTALTRANS_COLLECTION_ID!,  
-      queryParams
-    );  
+    let allDocuments: PayPortalTrans[] = [];  
+    let hasMore = true;  
+    let offset = 0;  
+    const batchSize = 100; // Adjust this value based on your needs  
 
-    //console.log("Query result:", transactions);  
-    return transactions as appwritePayportalTransResponse;  
+    while (hasMore) {  
+      const queryParams = [  
+        ...baseParams,  
+        Query.limit(batchSize),  
+        Query.offset(offset)  
+      ];  
+
+      if (limit && allDocuments.length + batchSize > limit) {  
+        queryParams[queryParams.length - 2] = Query.limit(limit - allDocuments.length);  
+      }   
+
+      const response = await database.listDocuments<PayPortalTrans>(  
+        DATABASE_ID!,  
+        PAYPORTALTRANS_COLLECTION_ID!,  
+        queryParams  
+      );  
+
+      const currentBatch = response.documents as PayPortalTrans[];  
+      allDocuments = [...allDocuments, ...currentBatch];  
+
+      // Stop conditions  
+      if (  
+        currentBatch.length < batchSize ||  
+        (limit && allDocuments.length >= limit) ||  
+        currentBatch.length === 0  
+      ) {  
+        hasMore = false;  
+      } else {  
+        offset += batchSize;  
+      }  
+    }  
+
+    // If limit is specified, ensure we don't exceed it  
+    const finalDocuments = limit   
+      ? allDocuments.slice(0, limit)  
+      : allDocuments;  
+
+    return {  
+      documents: finalDocuments,  
+      total: finalDocuments.length,  
+      // Include other necessary response metadata  
+    } as appwritePayportalTransResponse;  
+
   } catch (error: unknown) {  
     const appwriteError = error as appwritePayportalTransError;  
     console.error('Error fetching transactions by stores:', appwriteError.message);  
     if (appwriteError.response) {  
       console.error('Error details:', appwriteError.response);  
     }  
-    throw error;
+    throw error;  
   }  
 };
 

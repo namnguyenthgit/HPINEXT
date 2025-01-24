@@ -1,17 +1,26 @@
-import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pagination } from "./Pagination";
-import { PayPortalTrans } from "@/types";
+import { PayPortalTrans, tableSelectLimitOption } from "@/types";
 import { PayportalTransTable } from "./PayportalTransTable";
 import { PayportalTabItem } from "./PayportalTabItem";
 import PayPortalInfo from "./PayPortalInfo";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface RecentTransactionsProps {
   portals: string[];
   currentPortal: string;
   transactions: PayPortalTrans[];
   page: number;
+  totalAvailable: number;
+  onLimitChange: (limit: tableSelectLimitOption) => void;
+  currentLimit: tableSelectLimitOption;
 }
 
 const PayportalRecentTrans = ({
@@ -19,28 +28,73 @@ const PayportalRecentTrans = ({
   currentPortal,
   transactions = [],
   page = 1,
+  totalAvailable,
+  onLimitChange,
+  currentLimit,
 }: RecentTransactionsProps) => {
-  const rowsPerPage = 10;
-  const totalPages = Math.ceil(transactions.length / rowsPerPage);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const getLimitOptions = (
+    total: number
+  ): { value: tableSelectLimitOption; label: string }[] => {
+    const options: { value: tableSelectLimitOption; label: string }[] = [];
+
+    if (total >= 50) options.push({ value: 50, label: "50 transactions" });
+    if (total >= 75) options.push({ value: 75, label: "75 transactions" });
+    if (total >= 100) options.push({ value: 100, label: "100 transactions" });
+    if (total >= 200) options.push({ value: 200, label: "200 transactions" });
+    options.push({ value: "all", label: `All transactions (${total})` });
+
+    return options;
+  };
+
+  // First, get the transactions based on the overall limit
+  const limitedTransactions =
+    currentLimit === "all" ? transactions : transactions.slice(0, currentLimit);
+
+  const totalPages = Math.ceil(limitedTransactions.length / rowsPerPage);
   const indexOfLastTransaction = page * rowsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
-  const currentTransactions = transactions.slice(
+  const currentTransactions = limitedTransactions.slice(
     indexOfFirstTransaction,
     indexOfLastTransaction
   );
 
   return (
     <section className="recent-transactions">
-      <header className="flex items-center justify-between">
-        <h2 className="recent-transactions-label">Recent Transactions</h2>
-        <Link
-          href={`/transaction-history/?portal=${currentPortal}`}
-          className="view-all-btn"
-        >
-          View all
-        </Link>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="recent-transactions-label">Display recent:</h2>
+          {totalAvailable > 0 && (
+            <Select
+              value={String(currentLimit)}
+              onValueChange={(value) => {
+                onLimitChange(
+                  value === "all"
+                    ? "all"
+                    : (Number(value) as tableSelectLimitOption)
+                );
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select limit" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {getLimitOptions(totalAvailable).map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </header>
-      <Tabs defaultValue={currentPortal} className="w-full">
+      <Tabs
+        value={currentPortal}
+        defaultValue={currentPortal}
+        className="w-full"
+      >
         <TabsList className="recent-transactions-tablist">
           {portals.map((portal: string) => (
             <TabsTrigger key={portal} value={portal}>
@@ -53,9 +107,10 @@ const PayportalRecentTrans = ({
             <PayPortalInfo
               portal={portal}
               currentPortal={currentPortal}
-              transactionCount={transactions.length}
+              transactionCount={limitedTransactions.length}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={setRowsPerPage}
             />
-            {/* <TransactionsTable transactions={currentTransactions} /> */}
             <PayportalTransTable transactions={currentTransactions} />
             {totalPages > 1 && (
               <div className="my-4 w-full">
