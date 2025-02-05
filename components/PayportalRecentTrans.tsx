@@ -18,7 +18,6 @@ interface RecentTransactionsProps {
   currentPortal: string;
   transactions: PayPortalTrans[];
   page: number;
-  totalAvailable: number;
   onLimitChange: (limit: tableSelectLimitOption) => void;
   currentLimit: tableSelectLimitOption;
 }
@@ -28,30 +27,27 @@ const PayportalRecentTrans = ({
   currentPortal,
   transactions = [],
   page = 1,
-  totalAvailable,
   onLimitChange,
   currentLimit,
 }: RecentTransactionsProps) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const getLimitOptions = (
-    total: number
-  ): { value: tableSelectLimitOption; label: string }[] => {
-    const options: { value: tableSelectLimitOption; label: string }[] = [];
-
-    if (total >= 50) options.push({ value: 50, label: "50 transactions" });
-    if (total >= 75) options.push({ value: 75, label: "75 transactions" });
-    if (total >= 100) options.push({ value: 100, label: "100 transactions" });
-    if (total >= 200) options.push({ value: 200, label: "200 transactions" });
-    options.push({ value: "all", label: `All transactions (${total})` });
-
-    return options;
+  // Modified to show fixed options regardless of total
+  const getLimitOptions = (): {
+    value: tableSelectLimitOption;
+    label: string;
+  }[] => {
+    return [
+      { value: 50, label: "50 transactions" },
+      { value: 100, label: "100 transactions" },
+      { value: 200, label: "200 transactions" },
+      { value: 500, label: "500 transactions" },
+      { value: "all", label: "All transactions" },
+    ];
   };
 
   // First, get the transactions based on the overall limit
-  const limitedTransactions =
-    currentLimit === "all" ? transactions : transactions.slice(0, currentLimit);
-
+  const limitedTransactions = transactions;
   const totalPages = Math.ceil(limitedTransactions.length / rowsPerPage);
   const indexOfLastTransaction = page * rowsPerPage;
   const indexOfFirstTransaction = indexOfLastTransaction - rowsPerPage;
@@ -65,29 +61,27 @@ const PayportalRecentTrans = ({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="recent-transactions-label">Display recent:</h2>
-          {totalAvailable > 0 && (
-            <Select
-              value={String(currentLimit)}
-              onValueChange={(value) => {
-                onLimitChange(
-                  value === "all"
-                    ? "all"
-                    : (Number(value) as tableSelectLimitOption)
-                );
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select limit" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {getLimitOptions(totalAvailable).map((option) => (
-                  <SelectItem key={option.value} value={String(option.value)}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select
+            value={String(currentLimit)}
+            onValueChange={(value) => {
+              onLimitChange(
+                value === "all"
+                  ? "all"
+                  : (Number(value) as tableSelectLimitOption)
+              );
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select limit" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {getLimitOptions().map((option) => (
+                <SelectItem key={option.value} value={String(option.value)}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </header>
       <Tabs
@@ -107,7 +101,6 @@ const PayportalRecentTrans = ({
             <PayPortalInfo
               portal={portal}
               currentPortal={currentPortal}
-              transactionCount={limitedTransactions.length}
               rowsPerPage={rowsPerPage}
               onRowsPerPageChange={setRowsPerPage}
             />

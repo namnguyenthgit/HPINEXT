@@ -4,7 +4,7 @@ declare type SearchParamProps = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export type tableSelectLimitOption = 50 | 75 | 100 | 200 | "all";  
+export type tableSelectLimitOption = 50 | 100 | 200 | 500 | "all";  
 
 // ========================================
 

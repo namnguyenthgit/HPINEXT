@@ -111,11 +111,13 @@ export const getPayPortalTransByDocNo = async (lsDocumentNo: string) => {
   }
 }
 
-export const getPayPortalTransByStores = async (storeList: string[], limit?: number): Promise<appwritePayportalTransResponse> => {  
+export const getPayPortalTransByStores = async (  
+  storeList: string[],  
+  limit?: number // undefined means no limit (all)  
+): Promise<appwritePayportalTransResponse> => {  
   try {  
     const { database } = await createAdminClient();  
-
-    const stores: string[] = Array.isArray(storeList)   
+    const stores: string[] = Array.isArray(storeList)  
       ? storeList[0].includes(',')  
         ? storeList[0].split(',').map((s: string) => s.trim())  
         : storeList  
@@ -128,54 +130,62 @@ export const getPayPortalTransByStores = async (storeList: string[], limit?: num
       : [  
           Query.equal('terminalId', stores),  
           Query.orderDesc('$createdAt')  
-        ];   
+        ];  
 
-    let allDocuments: PayPortalTrans[] = [];  
-    let hasMore = true;  
-    let offset = 0;  
-    const batchSize = 100; // Adjust this value based on your needs  
-
-    while (hasMore) {  
-      const queryParams = [  
-        ...baseParams,  
-        Query.limit(batchSize),  
-        Query.offset(offset)  
-      ];  
-
-      if (limit && allDocuments.length + batchSize > limit) {  
-        queryParams[queryParams.length - 2] = Query.limit(limit - allDocuments.length);  
-      }   
-
+    // For specific limits, make a single request  
+    if (limit) {  
       const response = await database.listDocuments<PayPortalTrans>(  
         DATABASE_ID!,  
         PAYPORTALTRANS_COLLECTION_ID!,  
-        queryParams  
+        [...baseParams, Query.limit(limit)]  
       );  
-
-      const currentBatch = response.documents as PayPortalTrans[];  
-      allDocuments = [...allDocuments, ...currentBatch];  
-
-      // Stop conditions  
-      if (  
-        currentBatch.length < batchSize ||  
-        (limit && allDocuments.length >= limit) ||  
-        currentBatch.length === 0  
-      ) {  
-        hasMore = false;  
-      } else {  
-        offset += batchSize;  
-      }  
+      return {  
+        documents: response.documents as PayPortalTrans[],  
+        total: response.total,  
+      } as appwritePayportalTransResponse;  
     }  
 
-    // If limit is specified, ensure we don't exceed it  
-    const finalDocuments = limit   
-      ? allDocuments.slice(0, limit)  
-      : allDocuments;  
+    // For "all" records, first get total count with minimal fields  
+    const countResponse = await database.listDocuments(  
+      DATABASE_ID!,  
+      PAYPORTALTRANS_COLLECTION_ID!,  
+      [...baseParams, Query.select(['$id'])] // Only fetch ID to minimize bandwidth  
+    );  
+    const totalRecords = countResponse.total;  
+
+    // Calculate optimal batch configuration  
+    const batchSize = 100; // Maximum records per request  
+    const numberOfBatches = Math.ceil(totalRecords / batchSize);  
+    const maxConcurrentRequests = 5; // Limit concurrent requests to prevent overwhelming  
+
+    // Process in chunks of concurrent requests  
+    const allDocuments: PayPortalTrans[] = [];  
+    for (let i = 0; i < numberOfBatches; i += maxConcurrentRequests) {  
+      const currentBatchPromises = [];  
+      const remainingBatches = Math.min(maxConcurrentRequests, numberOfBatches - i);  
+
+      for (let j = 0; j < remainingBatches; j++) {  
+        const offset = (i + j) * batchSize;  
+        const promise = database.listDocuments<PayPortalTrans>(  
+          DATABASE_ID!,  
+          PAYPORTALTRANS_COLLECTION_ID!,  
+          [  
+            ...baseParams,  
+            Query.limit(batchSize),  
+            Query.offset(offset)  
+          ]  
+        );  
+        currentBatchPromises.push(promise);  
+      }  
+
+      const batchResults = await Promise.all(currentBatchPromises);  
+      const newDocuments = batchResults.flatMap(result => result.documents);  
+      allDocuments.push(...newDocuments);  
+    }  
 
     return {  
-      documents: finalDocuments,  
-      total: finalDocuments.length,  
-      // Include other necessary response metadata  
+      documents: allDocuments as PayPortalTrans[],  
+      total: totalRecords,  
     } as appwritePayportalTransResponse;  
 
   } catch (error: unknown) {  

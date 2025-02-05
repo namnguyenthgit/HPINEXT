@@ -76,7 +76,7 @@ interface appwriteCollectionBackup {
   documents: appwriteDocument[];  
 }  
 
-interface appwriteDatabaseBackup {  
+export interface appwriteDatabaseBackup {  
   timestamp: string;  
   collections: {  
       [key: string]: appwriteCollectionBackup;  
@@ -102,62 +102,81 @@ interface appwriteRestoreResult {
 
 export async function backupDatabaseAndAuth(): Promise<appwriteDatabaseBackup> {  
   try {  
-      const admin = await createAdminClient();  
-      const databases = admin.database;  
-      const users = admin.user;  
+    const admin = await createAdminClient();  
+    const databases = admin.database;  
+    const users = admin.user;  
+    
+    // Backup collections  
+    const collections = await databases.listCollections(  
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!  
+    );  
+
+    const backupData: appwriteDatabaseBackup = {  
+        timestamp: new Date().toISOString(),  
+        collections: {},  
+        users: []  
+    };  
+
+    // Backup each collection with pagination  
+    for (const collection of collections.collections) {  
+      let documentsOffset = 0;  
+      const documentsLimit = 100; // Appwrite's maximum limit per request  
+      let hasMoreDocuments = true;  
+      const allDocuments: appwriteDocument[] = [];
+      while (hasMoreDocuments) {
+        console.log(`Backing up collection ${collection.name}: ${allDocuments.length} documents so far...`);
+        const documents = await databases.listDocuments(  
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,  
+          collection.$id,  
+          [  
+            Query.limit(documentsLimit),  
+            Query.offset(documentsOffset)  
+          ]  
+        );  
+
+        allDocuments.push(...documents.documents as appwriteDocument[]);  
+
+        if (documents.documents.length < documentsLimit) {  
+          hasMoreDocuments = false;  
+        } else {  
+          documentsOffset += documentsLimit;  
+        }  
+      }  
       
-      // Backup collections  
-      const collections = await databases.listCollections(  
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!  
+      backupData.collections[collection.$id] = {  
+        name: collection.name,  
+        documents: allDocuments  
+      };  
+    }  
+
+    // Backup users  
+    let offset = 0;  
+    const limit = 100; // Appwrite's maximum limit per request  
+    let hasMoreUsers = true;  
+
+    while (hasMoreUsers) {  
+      const usersList = await users.list(  
+        [  
+          Query.limit(limit),  
+          Query.offset(offset)  
+        ]  
       );  
 
-      const backupData: appwriteDatabaseBackup = {  
-          timestamp: new Date().toISOString(),  
-          collections: {},  
-          users: []  
-      };  
+      backupData.users.push(...usersList.users as appwriteUserData[]);  
 
-      // Backup each collection  
-      for (const collection of collections.collections) {  
-          const documents = await databases.listDocuments(  
-              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,  
-              collection.$id  
-          );  
-          
-          backupData.collections[collection.$id] = {  
-              name: collection.name,  
-              documents: documents.documents as appwriteDocument[]  
-          };  
+      if (usersList.users.length < limit) {  
+        hasMoreUsers = false;  
+      } else {  
+        offset += limit;  
       }  
+    }  
 
-      // Backup users  
-      let offset = 0;  
-      const limit = 100; // Appwrite's maximum limit per request  
-      let hasMoreUsers = true;  
-
-      while (hasMoreUsers) {  
-          const usersList = await users.list(  
-              [  
-                  Query.limit(limit),  
-                  Query.offset(offset)  
-              ]  
-          );  
-
-          backupData.users.push(...usersList.users as appwriteUserData[]);  
-
-          if (usersList.users.length < limit) {  
-              hasMoreUsers = false;  
-          } else {  
-              offset += limit;  
-          }  
-      }  
-
-      return backupData;  
+    return backupData;  
   } catch (error) {  
-      console.error('Backup failed:', error);  
-      throw new Error('Failed to create backup');  
+    console.error('Backup failed:', error);  
+    throw new Error('Failed to create backup');  
   }  
-} 
+}
 
 export async function appwriteBackupCollection(collectionId: string): Promise<appwriteCollectionBackupData> {  
   try {  

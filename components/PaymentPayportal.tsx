@@ -10,13 +10,6 @@ import {
 } from "@/lib/client/appwriteUserPPTransSub";
 import { getPayPortalTransByStores } from "@/lib/actions/payportaltrans.actions";
 import { PayPortalTrans, tableSelectLimitOption, User } from "@/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 
 interface ExtendedUser extends User {
   storeNo: string;
@@ -30,14 +23,13 @@ interface PaymentPayportalProps {
   };
 }
 
-type LimitOption = 50 | 75 | 100 | 200 | "all";
+type LimitOption = 50 | 100 | 200 | 500 | "all";
 
 const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
   const [user, setUser] = useState<ExtendedUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<PayPortalTrans[]>([]);
   const [transactionLimit, setTransactionLimit] = useState<LimitOption>(50);
-  const [totalAvailable, setTotalAvailable] = useState<number>(0);
 
   const pageParam = searchParams?.page;
   const currentPage =
@@ -71,36 +63,8 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
     const combinedArray = [...storeNoArray, ...storeListArray];
     return Array.from(new Set(combinedArray));
   };
-
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-
-    // Define loadTransactions inside useEffect
-    const loadTransactions = async (storeArray: string[]): Promise<void> => {
-      try {
-        const allResponse = await getPayPortalTransByStores(storeArray);
-        if (allResponse && Array.isArray(allResponse.documents)) {
-          const total = allResponse.documents.length;
-          setTotalAvailable(total);
-
-          if (transactionLimit !== "all" && transactionLimit > total) {
-            setTransactionLimit(total as LimitOption);
-          }
-
-          setTransactions(
-            transactionLimit === "all"
-              ? allResponse.documents
-              : allResponse.documents.slice(0, transactionLimit)
-          );
-        }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          console.error("Error loading transactions:", error.message);
-        } else {
-          console.error("Unknown error loading transactions:", error);
-        }
-      }
-    };
 
     const setup = async () => {
       try {
@@ -112,7 +76,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
 
         setUser(initialUser);
         const storeArray = getStoreArray(initialUser);
-        await loadTransactions(storeArray);
+        await loadTransactions(storeArray, transactionLimit);
 
         unsubscribe = subcribePayportalTrans(
           initialUser.$id,
@@ -122,35 +86,30 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
             onUserChange: (updatedUser) => {
               setUser(updatedUser as ExtendedUser);
               const newStoreArray = getStoreArray(updatedUser as ExtendedUser);
-              loadTransactions(newStoreArray);
+              loadTransactions(newStoreArray, transactionLimit);
             },
             onTransactionChange: (updatedTransaction, changedFields) => {
               setTransactions((prev) => {
                 // Handle deleted transaction
                 if (changedFields === "deleted") {
-                  setTotalAvailable((current) => current);
                   return prev.filter((t) => t.$id !== updatedTransaction.$id);
                 }
 
                 // Handle new transaction
                 if (changedFields === "created") {
-                  setTotalAvailable((current) => current);
-                  const newTransactions = [updatedTransaction, ...prev];
-                  return transactionLimit === "all"
-                    ? newTransactions
-                    : newTransactions.slice(0, transactionLimit);
+                  return [updatedTransaction, ...prev].slice(
+                    0,
+                    transactionLimit === "all" ? undefined : transactionLimit
+                  );
                 }
 
                 // Handle updated transaction
                 if (Array.isArray(changedFields)) {
-                  const updated = prev.map((t) =>
+                  return prev.map((t) =>
                     t.$id === updatedTransaction.$id
                       ? { ...t, ...updatedTransaction }
                       : t
                   );
-                  return transactionLimit === "all"
-                    ? updated
-                    : updated.slice(0, transactionLimit);
                 }
 
                 return prev;
@@ -175,11 +134,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
           }
         );
       } catch (error) {
-        if (error instanceof Error) {
-          console.error("Setup error:", error.message);
-        } else {
-          console.error("Unknown setup error:", error);
-        }
+        console.error("Setup error:", error);
       } finally {
         setIsLoading(false);
       }
@@ -191,6 +146,27 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
       if (unsubscribe) unsubscribe();
     };
   }, [transactionLimit]);
+
+  const loadTransactions = async (
+    storeArray: string[],
+    limit: LimitOption = 50
+  ): Promise<void> => {
+    try {
+      const response = await getPayPortalTransByStores(
+        storeArray,
+        limit === "all" ? undefined : limit
+      );
+      console.log(
+        "PaymentPayportal-loadTransactions-getPayPortalTransByStores response:",
+        response
+      );
+      if (response && Array.isArray(response.documents)) {
+        setTransactions(response.documents);
+      }
+    } catch (error: unknown) {
+      console.error("Error loading transactions:", error);
+    }
+  };
 
   // Group transactions by payPortalName
   const groupedTransactions = transactions.reduce((acc, transaction) => {
@@ -206,22 +182,9 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
     setIsLoading(true); // Set loading state
     if (user) {
       const storeArray = getStoreArray(user);
-      try {
-        const allResponse = await getPayPortalTransByStores(storeArray);
-        if (allResponse && Array.isArray(allResponse.documents)) {
-          const total = allResponse.documents.length;
-          setTotalAvailable(total);
-          setTransactions(
-            newLimit === "all"
-              ? allResponse.documents
-              : allResponse.documents.slice(0, newLimit)
-          );
-        }
-      } catch (error) {
-        console.error("Error reloading transactions:", error);
-      }
+      await loadTransactions(storeArray, newLimit);
+      setTransactionLimit(newLimit);
     }
-    setTransactionLimit(newLimit);
     setIsLoading(false); // Clear loading state
   };
 
@@ -256,7 +219,6 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
           currentPortal={currentPortal}
           transactions={currentTransactions}
           page={currentPage}
-          totalAvailable={totalAvailable}
           onLimitChange={handleLimitChange}
           currentLimit={transactionLimit}
         />

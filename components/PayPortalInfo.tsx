@@ -13,7 +13,6 @@ import {
 interface PortalInfoProps {
   portal: string;
   currentPortal: string;
-  transactionCount: number;
   rowsPerPage: number;
   onRowsPerPageChange: (value: number) => void;
 }
@@ -21,7 +20,6 @@ interface PortalInfoProps {
 const PayPortalInfo = ({
   portal,
   currentPortal,
-  transactionCount,
   rowsPerPage,
   onRowsPerPageChange,
 }: PortalInfoProps) => {
