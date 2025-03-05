@@ -78,14 +78,14 @@ export default function TelegramForm() {
             onChange={(e) => handleInputChange("brand", e.target.value)}
           >
             <option value="">Chọn nhãn hàng</option>
-            <option value="nike">KAPPA</option>
-            <option value="adidas">ECKO</option>
-            <option value="puma">SUPERGA</option>
-            <option value="reebok">REPLAY</option>
-            <option value="reebok">STAPLE</option>
-            <option value="reebok">REPLAY</option>
-            <option value="reebok">NINU&NICK</option>
-            <option value="reebok">WISSBRAND</option>
+            <option value="KAPPA">KAPPA</option>
+            <option value="ECKO">ECKO</option>
+            <option value="SUPERGA">SUPERGA</option>
+            <option value="REPLAY">REPLAY</option>
+            <option value="STAPLE">STAPLE</option>
+            <option value="REPLAY">REPLAY</option>
+            <option value="NINU&NICK">NINU&NICK</option>
+            <option value="WISSBRAND">WISSBRAND</option>
           </select>
         </div>
 
@@ -109,7 +109,7 @@ export default function TelegramForm() {
             }}
           />
           <p className="text-sm text-gray-500 mt-1">
-            Enter days before (1-365)
+            phạm vi ngày trong khoản (1-365)
           </p>
         </div>
       </div>
