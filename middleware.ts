@@ -35,7 +35,8 @@ export const publicPaths = [
   '/sign-in',  
   '/sign-up',  
   '/api',  
-  '/icons'  
+  '/icons',
+  '/getpo1stsale',
 ] as const;  
 
 // Add admin paths that should be accessible  
