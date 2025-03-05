@@ -8,6 +8,13 @@ import { appConfig } from './lib/appconfig';
 const limiter = new RateLimiter();
 const COOKIE_NAME = appConfig.cookie_name;
 
+// Add blocked paths that should return 404  
+const blockedPaths = [  
+  '/add-banks',  
+  '/marketprice',  
+  '/add-bank'  
+] as const;  
+
 // Static paths that don't need authentication checks  
 const staticPaths = [  
   '_next/static',  
@@ -73,7 +80,12 @@ function addRateLimitHeaders(response: NextResponse, limit: number, remaining: n
 } 
 
 export async function middleware(request: NextRequest) {  
-  const { pathname } = request.nextUrl;  
+  const { pathname } = request.nextUrl;
+
+  // Check blocked paths first - return 404  
+  if (isPathMatch(pathname, blockedPaths)) {  
+    return NextResponse.rewrite(new URL('/404', request.url));  
+  }
 
   // Check static paths first  
   if (isPathMatch(pathname, staticPaths)) {  
@@ -151,6 +163,10 @@ export const config = {
     // Match all paths except static files  
     '/((?!_next/static|_next/image|favicon.ico|public|assets|.png|.jpg|.jpeg|.gif|.svg|.ico).*)',  
     // Explicitly match admin routes  
-    '/(admin)/:path*'  
+    '/(admin)/:path*',
+    // Explicitly match blocked paths  
+    '/add-banks',  
+    '/marketprice',  
+    '/add-bank'
   ],  
 }

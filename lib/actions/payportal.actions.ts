@@ -7,6 +7,7 @@ import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
 import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
+import { payWithGalaxyQR } from './galaxypay.actions';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -427,7 +428,7 @@ async function processPaymentByPortal(
             const app_trans_id = `${dateFormat}_${terminalId}_${uniqueString}_${lsDocumentNo}`;
             const zaloResponse = await createZalopayOrder({  
                 app_trans_id,  
-                app_user: email,  
+                app_user: email,
                 amount,  
                 description: `Hoang Phuc International - Payment for order #${app_trans_id}`,
                 embed_data,
@@ -438,6 +439,20 @@ async function processPaymentByPortal(
                 ...zaloResponse,  
                 payPortalOrder: app_trans_id  
             };
+        
+        case 'galaxypay':
+            const galaxypayResponse = await payWithGalaxyQR({
+                orderNumber:lsDocumentNo,
+                orderAmount:amount,
+                orderDescription:lsDocumentNo,
+            });
+            
+            return {
+                return_code: galaxypayResponse.responseCode,
+                return_message: galaxypayResponse.responseMessage,
+                payPortalOrder: galaxypayResponse.transactionID,
+                ...galaxypayResponse
+            }
         default:  
             throw new Error(`Unsupported payment portal: ${portalName}`);  
     }  

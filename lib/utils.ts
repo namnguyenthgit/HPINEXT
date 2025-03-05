@@ -210,6 +210,7 @@ export function decryptId(id: string) {
   return atob(id);
 }
 
+//Zalopay
 export function encryptHmacSHA256(data:string, key: string){
   return CryptoJS.HmacSHA256(data, key).toString();
 }
@@ -217,7 +218,67 @@ export function encryptHmacSHA256(data:string, key: string){
 export function verifyHmacSHA256(originalData: string, key: string, hashToVerify: string) {  
   const generatedHash = encryptHmacSHA256(originalData, key);  
   return generatedHash === hashToVerify;
+}
+
+//Galaxypay
+export const hashWithSHA256 = (plainText: string) => {
+  return CryptoJS.SHA256(plainText);
+};
+
+export const genDateTimeNow = () => {
+  return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+};
+
+//generate UID
+// Method 1: Using crypto.randomUUID() - Recommended for unique IDs  
+export function generateUID(): string {  
+  return crypto.randomUUID();  
 }  
+
+// Method 2: Custom format with timestamp and random string  
+export function generateCustomUID(prefix: string = ''): string {  
+  const timestamp = Date.now();  
+  const randomStr = Math.random().toString(36).substring(2, 8);  
+  return `${prefix}${timestamp}-${randomStr}`;  
+}  
+
+// Method 3: Short random ID (good for temporary IDs)  
+export function generateShortUID(length: number = 8): string {  
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';  
+  let result = '';  
+  const cryptoValues = new Uint32Array(length);  
+  crypto.getRandomValues(cryptoValues);  
+  
+  for (let i = 0; i < length; i++) {  
+    result += chars[cryptoValues[i] % chars.length];  
+  }  
+  
+  return result;  
+}  
+
+// Method 4: Nanoid-like format (URL-friendly)  
+export function generateNanoID(size: number = 21): string {  
+  const urlAlphabet = 'useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict';  
+  let id = '';  
+  const cryptoValues = new Uint32Array(size);  
+  crypto.getRandomValues(cryptoValues);  
+  
+  for (let i = 0; i < size; i++) {  
+    id += urlAlphabet[cryptoValues[i] % urlAlphabet.length];  
+  }  
+  
+  return id;  
+}  
+
+// Method 5: Sequential ID with random suffix  
+let counter = 0;  
+export function generateSequentialUID(): string {  
+  const timestamp = Date.now();  
+  const count = (counter++).toString().padStart(4, '0');  
+  const random = Math.random().toString(36).substring(2, 6);  
+  return `${timestamp}-${count}-${random}`;  
+}
+//end generate UID
 
 export const getTransactionStatus = (date: Date) => {
   const today = new Date();

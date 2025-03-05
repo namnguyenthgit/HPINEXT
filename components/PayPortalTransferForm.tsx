@@ -41,7 +41,7 @@ const PAY_PORTALS = [
   // { name: "VNPay", value: "VNPay" },
   { name: "Zalopay", value: "zalopay" },
   // { name: "OCB pay", value: "OCB pay" },
-  // { name: "Galaxy Pay", value: "Galaxy Pay" },
+  { name: "Galaxypay", value: "galaxypay" },
 ];
 
 interface PayPortalTransferFormProps {
@@ -106,10 +106,10 @@ const PayPortalTransferForm = ({
     type: "success" | "error" | "warning" | null;
     message: string | null;
   }>({ type: null, message: null });
-  const ITEM_HEIGHT = 36; // Height of each item in pixels  
-  const MAX_VISIBLE_ITEMS = 4; // Number of items to show before scrolling  
+  const ITEM_HEIGHT = 36; // Height of each item in pixels
+  const MAX_VISIBLE_ITEMS = 4; // Number of items to show before scrolling
   const PADDING = 8;
-  const MIN_HEIGHT = ITEM_HEIGHT + (PADDING * 2);
+  const MIN_HEIGHT = ITEM_HEIGHT + PADDING * 2;
 
   const [documentNumbers, setDocumentNumbers] = useState<string[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
@@ -120,7 +120,6 @@ const PayPortalTransferForm = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [showManualRedirect, setShowManualRedirect] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
-
 
   const debouncedSearchQuery = useDebounce(searchQuery);
 
@@ -133,10 +132,11 @@ const PayPortalTransferForm = ({
     },
   });
 
-  // Helper function to calculate content height  
-  const getContentHeight = (itemCount: number): number => {  
-    const height = Math.min(itemCount, MAX_VISIBLE_ITEMS) * ITEM_HEIGHT + (PADDING * 2);  
-    return Math.max(height, MIN_HEIGHT);  
+  // Helper function to calculate content height
+  const getContentHeight = (itemCount: number): number => {
+    const height =
+      Math.min(itemCount, MAX_VISIBLE_ITEMS) * ITEM_HEIGHT + PADDING * 2;
+    return Math.max(height, MIN_HEIGHT);
   };
 
   const fetchDocuments = useCallback(async () => {
@@ -346,10 +346,10 @@ const PayPortalTransferForm = ({
               <FormLabel>Document Number</FormLabel>
               <Select
                 disabled={isLoading}
-                onValueChange={(value) => {  
-                  field.onChange(value);  
-                  setIsSelectOpen(false);  
-                  setSearchQuery(''); // Reset search after selection  
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  setIsSelectOpen(false);
+                  setSearchQuery(""); // Reset search after selection
                 }}
                 value={field.value}
                 open={isSelectOpen}
@@ -360,7 +360,7 @@ const PayPortalTransferForm = ({
                     <SelectValue placeholder="Select document number" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent 
+                <SelectContent
                   className="min-w-[300px]"
                   position="popper"
                   sideOffset={5}
@@ -374,38 +374,47 @@ const PayPortalTransferForm = ({
                           ref={inputRef}
                           placeholder="Search documents..."
                           value={searchQuery}
-                          onChange={(e) => {  
-                            e.stopPropagation();  
-                            setSearchQuery(e.target.value);  
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setSearchQuery(e.target.value);
                           }}
-                          onKeyDown={(e) => {  
-                            e.stopPropagation(); 
-                            if (e.key === 'Enter' && filteredDocuments.length === 1) {  
-                              field.onChange(filteredDocuments[0]);  
-                              setIsSelectOpen(false);  
-                              setSearchQuery('');  
-                            }  
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (
+                              e.key === "Enter" &&
+                              filteredDocuments.length === 1
+                            ) {
+                              field.onChange(filteredDocuments[0]);
+                              setIsSelectOpen(false);
+                              setSearchQuery("");
+                            }
                           }}
-                          onFocus={(e) => {  
-                            e.stopPropagation();  
-                            setIsInputFocused(true);  
+                          onFocus={(e) => {
+                            e.stopPropagation();
+                            setIsInputFocused(true);
                           }}
-                          onBlur={(e) => {  
+                          onBlur={(e) => {
                             e.stopPropagation();
                             const currentInput = inputRef.current;
 
-                            // Create cleanup function  
-                            const timeoutId = setTimeout(() => {  
-                              // Safety check if component is still mounted and input exists  
-                              if (currentInput && document.body.contains(currentInput)) {  
-                                const activeElement = document.activeElement;  
-                                if (activeElement && !currentInput.contains(activeElement)) {  
-                                  setIsInputFocused(false);  
-                                }  
-                              }  
+                            // Create cleanup function
+                            const timeoutId = setTimeout(() => {
+                              // Safety check if component is still mounted and input exists
+                              if (
+                                currentInput &&
+                                document.body.contains(currentInput)
+                              ) {
+                                const activeElement = document.activeElement;
+                                if (
+                                  activeElement &&
+                                  !currentInput.contains(activeElement)
+                                ) {
+                                  setIsInputFocused(false);
+                                }
+                              }
                             }, 100);
 
-                            // Cleanup timeout on next blur or unmount  
+                            // Cleanup timeout on next blur or unmount
                             return () => clearTimeout(timeoutId);
                           }}
                           className="pl-8 h-9 w-full bg-transparent"
@@ -416,13 +425,13 @@ const PayPortalTransferForm = ({
                     {/* Results Area */}
                     <ScrollArea
                       className="overflow-auto rounded-b-md"
-                      style={{  
-                        height: `${getContentHeight(  
-                          isLoadingDocuments || documentError   
-                            ? 1 // Show one item height for loading/error states  
-                            : filteredDocuments.length // Use actual number of items  
-                        )}px`  
-                      }}  
+                      style={{
+                        height: `${getContentHeight(
+                          isLoadingDocuments || documentError
+                            ? 1 // Show one item height for loading/error states
+                            : filteredDocuments.length // Use actual number of items
+                        )}px`,
+                      }}
                       onWheelCapture={(e) => e.stopPropagation()}
                     >
                       {isLoadingDocuments ? (
@@ -442,16 +451,16 @@ const PayPortalTransferForm = ({
                         </div>
                       ) : (
                         filteredDocuments.map((docNo) => (
-                          <SelectItem 
-                            key={docNo}  
-                            value={docNo}  
-                            className="cursor-pointer hover:bg-gray-100 rounded-sm"  
-                            onMouseDown={(e) => {  
-                              e.preventDefault();  
-                              e.stopPropagation();  
-                              field.onChange(docNo);  
-                              setIsSelectOpen(false);  
-                              setSearchQuery('');
+                          <SelectItem
+                            key={docNo}
+                            value={docNo}
+                            className="cursor-pointer hover:bg-gray-100 rounded-sm"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              field.onChange(docNo);
+                              setIsSelectOpen(false);
+                              setSearchQuery("");
                             }}
                           >
                             <HighlightedText

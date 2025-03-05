@@ -10,7 +10,7 @@ const Page = async ({ searchParams }: SearchParamProps) => {
   return (
     <section className="payment-payportal p-5">
       <HeaderBox
-        title="Pay Portals"
+        title="Payment Portals"
         subtext="Please provide any specific details or notes related to the payment portals"
       />
       <div>

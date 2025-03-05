@@ -549,4 +549,11 @@ export type UserRole = 'admin' | 'user' | undefined;
 export interface SessionVerificationResult {  
   isValid: boolean;  
   error?: string;  
-} 
+}
+
+//Galaxypay
+declare interface payWithGalaxyQRParams {
+  orderNumber: string;
+  orderAmount: string | number;
+  orderDescription: string;
+}
