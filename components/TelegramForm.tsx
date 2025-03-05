@@ -77,15 +77,14 @@ export default function TelegramForm() {
             value={formData.brand}
             onChange={(e) => handleInputChange("brand", e.target.value)}
           >
-            <option value="">Chọn nhãn hàng</option>
-            <option value="KAPPA">KAPPA</option>
-            <option value="ECKO">ECKO</option>
-            <option value="SUPERGA">SUPERGA</option>
-            <option value="REPLAY">REPLAY</option>
-            <option value="STAPLE">STAPLE</option>
-            <option value="REPLAY">REPLAY</option>
-            <option value="NINU&NICK">NINU&NICK</option>
-            <option value="WISSBRAND">WISSBRAND</option>
+            <option value="0">Chọn nhãn hàng</option>
+            <option value="1000">KAPPA</option>
+            <option value="1001">ECKO</option>
+            <option value="1002">SUPERGA</option>
+            <option value="1003">REPLAY</option>
+            <option value="1008">STAPLE</option>
+            <option value="1010">NINU&NICK</option>
+            <option value="1011">WISSBRAND</option>
           </select>
         </div>
 
