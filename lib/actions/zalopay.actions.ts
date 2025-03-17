@@ -13,7 +13,7 @@ async function makeZalopayRequest<T = ZaloPayResponse>(endpoint: ZaloEndpoint, d
     try {
         
         if (isSandboxMode()) {  
-            console.log('zalopay.action-makeZalopayRequest-data:',JSON.stringify(data)); 
+            console.log(`ACTION:makeZalopayRequest-${endpoint}-data:`,JSON.stringify(data)); 
         }
         //console.log('makeZalopayRequest endpoint:',getEndpointUrl(endpoint));
         const response = await fetch(getEndpointUrl(endpoint), {  
@@ -32,12 +32,12 @@ async function makeZalopayRequest<T = ZaloPayResponse>(endpoint: ZaloEndpoint, d
 
         // Log in sandbox mode only  
         if (isSandboxMode()) {  
-            console.log(`Zalopay ${endpoint} Response:`, result);  
+            console.log(`ACTION:makeZalopayRequest-${endpoint} Response:`, result);  
         }  
 
         return result;
     } catch (error) {
-        console.error(`Zalopay ${endpoint} error:`, error);  
+        console.error(`ACTION:makeZalopayRequest-${endpoint} error:`, error);  
         throw error;
     }    
 }

@@ -71,23 +71,8 @@ type AppwriteTransaction = {
   amount?: string;  
   lsDocumentNo?: string;  
   time_request?: string;  
-  // Add other possible attributes here  
-}
+};
 
-// Plaid Transaction Interface  
-declare interface PlaidTransaction {  
-  transaction_id: string;  
-  name: string;  
-  payment_channel: string;  
-  account_id: string;  
-  amount: number;  
-  pending: boolean;  
-  category?: string[];  
-  date: string;  
-  logo_url?: string;  
-}  
-
-// Formatted Transaction Interface  
 declare interface FormattedTransaction {  
   id: string;  
   name: string;  
@@ -106,7 +91,6 @@ declare type Bank = {
   accountId: string;
   bankId: string;
   accessToken: string;
-  fundingSourceUrl: string;
   userId: string;
   shareableId: string;
 };
@@ -132,8 +116,6 @@ declare type Receiver = {
 };
 
 declare type TransferParams = {
-  sourceFundingSourceUrl: string;
-  destinationFundingSourceUrl: string;
   amount: string;
 };
 

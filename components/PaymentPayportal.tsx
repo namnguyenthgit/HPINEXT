@@ -156,10 +156,7 @@ const PaymentPayportal = ({ searchParams }: PaymentPayportalProps) => {
         storeArray,
         limit === "all" ? undefined : limit
       );
-      console.log(
-        "PaymentPayportal-loadTransactions-getPayPortalTransByStores response:",
-        response
-      );
+      //console.log("PaymentPayportal-loadTransactions-getPayPortalTransByStores response:",response);
       if (response && Array.isArray(response.documents)) {
         setTransactions(response.documents);
       }

@@ -7,7 +7,7 @@ import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
 import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
-import { payWithGalaxyQR } from './galaxypay.actions';
+import { payWithGalaxyQR, queryGalaxyPayOrder } from './galaxypay.actions';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -25,55 +25,30 @@ interface PaymentQuery {
     portalName: string;
 } 
 
-interface PaymentResponse extends ZaloPayResponse {  
+export interface PaymentResponse extends ZaloPayResponse {  
     payPortalOrder?: string;
     order_url?: string;
     qr_code?: string;
 
 }
 
-export async function fetchLsDocuments(type: string, params: string): Promise<lsApiDocReturn> {  
-    try {
-        const baseurl = appConfig.baseurl.replace(/\/$/, '');
-        const endpoint = `${baseurl}/api/lsretail/getdata/${type}?value=${encodeURIComponent(params)}`;
-        //console.log(`payportal.action, fetchLsDocuments endpoint: "${endpoint}"`);
-        const response = await fetch(endpoint, {  
-            method: 'GET',  
-        });  
-
-        if (!response.ok) {  
-            throw new Error(`Failed to fetch data: ${response.statusText}`);  
-        }  
-
-        const data: lsApiDocReturn = await response.json();  
-        
-        if (!data.success) {  
-            throw new Error(data.message || 'Failed to fetch data');  
-        }  
-
-        return data;  
-    } catch (error) {  
-        console.error('Error fetching data:', error);  
-        throw error;  
-    }  
-}
 
 // Helper function to check existing ZaloPay payment  
-async function checkExistingZaloPayment(  
-    app_trans_id: string | undefined  
-): Promise<ZaloPayResponse | null> {  
-    if (!app_trans_id) {  
-        return null;  
-    }   
+// async function checkExistingZaloPayment(  
+//     app_trans_id: string | undefined  
+// ): Promise<ZaloPayResponse | null> {  
+//     if (!app_trans_id) {  
+//         return null;  
+//     }   
     
-    try {  
-        const queryResult = await queryZalopayOrder(app_trans_id);  
-        return queryResult;  
-    } catch (error) {  
-        console.error(`Error querying ZaloPay order "${app_trans_id}":`, error);  
-        return null;  
-    }  
-}
+//     try {  
+//         const queryResult = await queryZalopayOrder(app_trans_id);  
+//         return queryResult;  
+//     } catch (error) {  
+//         console.error(`Error querying ZaloPay order "${app_trans_id}":`, error);  
+//         return null;  
+//     }  
+// }
 
 async function safeUpdatePayPortalTrans(documentId: string, data: unknown): Promise<boolean> {  
     try {  
@@ -236,8 +211,11 @@ export async function processPayment(
         }
         
         if (existingPayportalTrans && existingPayportalTrans.payPortalOrder) {  
-            const existingPayment = await checkExistingZaloPayment(existingPayportalTrans.payPortalOrder);  
-            
+            const existingPayment = await checkExistingPaymentStatus(
+                existingPayportalTrans.payPortalName,
+                existingPayportalTrans.payPortalOrder
+            );  
+            console.log("processPayment-existingPayment:",existingPayment);
             if (existingPayment) {  
                 // Case 1: Payment is successful => if order create same amount: update payPortalTrans.status to success otherwise raise error
                 if (existingPayment.return_code === 1) {
@@ -448,9 +426,11 @@ async function processPaymentByPortal(
             });
             
             return {
-                return_code: galaxypayResponse.responseCode,
+                return_code: galaxypayResponse.responseCode === 200 ? 1 : galaxypayResponse.responseCode,
                 return_message: galaxypayResponse.responseMessage,
                 payPortalOrder: galaxypayResponse.transactionID,
+                order_url:galaxypayResponse.endpoint,
+                qr_code:galaxypayResponse.qrCode,
                 ...galaxypayResponse
             }
         default:  
@@ -587,4 +567,28 @@ export async function formatCallbackResponse(
                 message: result.success ? "success" : result.message,
             });  
     }  
+}  
+// Rename and modify the helper function to check existing payments
+async function checkExistingPaymentStatus(
+    payPortalName: string,
+    app_trans_id: string | undefined
+): Promise<PaymentResponse | null> {
+    if (!app_trans_id) {
+        return null;
+    }
+
+    try {
+        switch (payPortalName.toLowerCase()) {
+            case 'zalopay':
+                return await queryZalopayOrder(app_trans_id);
+            case 'galaxypay':
+                return await queryGalaxyPayOrder(app_trans_id);
+            default:
+                console.error(`Unsupported payment portal: ${payPortalName}`);
+                return null;
+        }
+    } catch (error) {
+        console.error(`Error querying ${payPortalName} order "${app_trans_id}":`, error);
+        return null;
+    }
 }  

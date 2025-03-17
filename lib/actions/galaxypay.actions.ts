@@ -2,12 +2,13 @@
 
 import { payWithGalaxyQRParams } from "@/types";
 import { galaxyConfig, GalaxyEndpoint, GalaxypayResponse, getEndpointUrl, isSandboxMode } from "../galaxypay/galaxy.config";
-import { genDateTimeNow, generateUID, hashWithSHA256 } from "../utils";
+import { genDateTimeNow, generateUID, generateUniqueString, hashWithSHA256 } from "../utils";
+import { PaymentResponse } from './payportal.actions';
 
 async function makeGalaxypayRequest<T = GalaxypayResponse>(endpoint: GalaxyEndpoint, data: Record<string, unknown>) : Promise<T> {
     try {
         if (isSandboxMode()){
-            console.log('galaxypay.action-makeGalaxypayRequest-data:',JSON.stringify(data));
+            console.log(`ACTION:makeGalaxypayRequest-${endpoint}-data:`,JSON.stringify(data));
         }
         const apikey = galaxyConfig.api_key;
         const salt = galaxyConfig.salt;
@@ -28,15 +29,27 @@ async function makeGalaxypayRequest<T = GalaxypayResponse>(endpoint: GalaxyEndpo
             throw new Error(`HTTP error! status: ${response.status}`);  
         }
 
-        const result = await response.json();
+        const rawResult = await response.json();
+
+        const result = {  
+            ...rawResult,  
+            responseDateTime: parseInt(rawResult.responseDateTime),  
+            responseCode: parseInt(rawResult.responseCode),  
+            // Extract nested values to root level  
+            qrCode: rawResult.responseData.qrCode,  
+            transactionID: rawResult.responseData.transactionID,
+            endpoint: rawResult.responseData.endpoint,  
+            // Convert responseData to string as per interface  
+            responseData: JSON.stringify(rawResult.responseData)  
+        };
 
         // Log in sandbox mode only  
         if  (isSandboxMode()) {  
-            console.log(`Zalopay ${endpoint} Response:`, result);  
+            console.log(`ACTION:makeGalaxypayReques-${endpoint} Response:`, result);  
         }
         return result;
     } catch (error) {
-        console.error(`Galaxypay ${endpoint} error:`, error);  
+        console.error(`ACTION:makeGalaxypayRequest-${endpoint} error:`, error);  
         throw error;
     }
 }
@@ -60,4 +73,59 @@ export async function payWithGalaxyQR(params:payWithGalaxyQRParams) : Promise<Ga
     };
 
     return makeGalaxypayRequest('create', request);
+}
+
+export interface GalaxyPayQueryResponse {
+    responseCode: string;
+    responseMessage: string;
+    responseData?: {
+        transactionID: string;
+        transactionStage: string;
+        transactionStatus: string;
+        transactionDescription: string;
+        orderAmount: string;
+    };
+}
+
+export async function queryGalaxyPayOrder(transactionID: string): Promise<PaymentResponse> {
+    try {
+        const requestID = generateUniqueString();
+        const requestDateTime = genDateTimeNow();
+        
+        const request = {
+            requestID,
+            requestDateTime,
+            requestData: {
+                transactionID
+            }
+        };
+
+        const data = await makeGalaxypayRequest<GalaxyPayQueryResponse>('query', request);
+
+        // Map GalaxyPay status to generic format
+        let return_code = 2; // Default to error
+        if (data.responseCode === "200") {
+            if (data.responseData?.transactionStage === "SUCCESS") {
+                return_code = 1; // Success
+            } else if (data.responseData?.transactionStage === "PROCESSING") {
+                return_code = 3; // Processing
+            }
+        }
+
+        return {
+            return_code,
+            return_message: data.responseData?.transactionDescription || data.responseMessage,
+            sub_return_code: parseInt(data.responseData?.transactionStatus || "0"),
+            sub_return_message: data.responseData?.transactionDescription || "",
+            amount: data.responseData?.orderAmount ? parseInt(data.responseData.orderAmount) : 0
+        };
+    } catch (error) {
+        console.error('Error querying GalaxyPay order:', error);
+        return {
+            return_code: 2,
+            return_message: 'Query Failed',
+            sub_return_code: -500,
+            sub_return_message: error instanceof Error ? error.message : 'Unknown error occurred'
+        };
+    }
 }
