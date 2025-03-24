@@ -132,7 +132,7 @@ const AuthForm = ({ type }: { type: string }) => {
 
       // Get the ID token
       const idToken = await user.getIdToken();
-
+      //console.log("AuthForm-handleGoogleLogin-idToken:", idToken);
       // Call your backend to verify the token and create a session
       const response = await googleSignIn(idToken);
 
@@ -144,6 +144,7 @@ const AuthForm = ({ type }: { type: string }) => {
 
       // Success - redirect to the callback URL or dashboard
       console.log("Google login successful:", response.user?.email);
+      console.log("callbackUrl:", callbackUrl);
       router.push(callbackUrl);
     } catch (error: unknown) {
       console.error("Google sign-in error:", error);

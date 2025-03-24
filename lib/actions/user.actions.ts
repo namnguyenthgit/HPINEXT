@@ -29,6 +29,7 @@ interface SessionInfo {
 const DATABASE_ID = appwriteConfig.databaseId
 const USER_COLLECTION_ID = appwriteConfig.userCollectionId
 const COOKIE_NAME = appConfig.cookie_name;
+const BASE_URL = appConfig.baseurl;
 
 // Token handling functions  
 export const getServerSession = async () => {
@@ -308,7 +309,7 @@ export const logoutAccount = async () => {
 export async function googleSignIn(token: string) {
   try {
     // Call your backend API to verify the token  
-    const response = await fetch('/api/auth/google', {
+    const response = await fetch(`${BASE_URL}/api/auth/google`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -325,7 +326,6 @@ export async function googleSignIn(token: string) {
         type: data.type || 'google_auth_error',
       };
     }
-
     return data;
   } catch (error) {
     console.error('Google sign-in error:', error);
