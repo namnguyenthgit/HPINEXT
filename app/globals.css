@@ -380,3 +380,7 @@
     @apply text-16 font-semibold text-black-2 max-xl:hidden;
   }
 }
+
+.light-btn {
+  @apply text-14 rounded-lg border border-gray-300 px-4 py-2.5 font-semibold text-gray-700 shadow hover:bg-gray-100;
+}

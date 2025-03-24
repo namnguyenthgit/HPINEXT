@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#firebase
+hpinext-firebase-adminsdk-hgpoj-9ca4f60d25.json

@@ -12,8 +12,10 @@ import CustomInput from "./CustomInput";
 import { authFormSchema } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, signUp } from "@/lib/actions/user.actions";
+import { googleSignIn, signIn, signUp } from "@/lib/actions/user.actions";
 import { appConfig } from "@/lib/appconfig";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase.config";
 
 const AuthForm = ({ type }: { type: string }) => {
   const apptitle = appConfig.title;
@@ -26,6 +28,12 @@ const AuthForm = ({ type }: { type: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Add a separate loading state for Google sign-in
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Helper function to check if any auth process is in progress
+  const isLoading = isPending || isGoogleLoading;
 
   const formSchema = authFormSchema(type);
 
@@ -96,9 +104,6 @@ const AuthForm = ({ type }: { type: string }) => {
           }
 
           // Successful login
-          // router.refresh(); // Refresh to update auth state
-          // router.push(callbackUrl);
-          //console.log("callbackUrl", callbackUrl);
           router.push(callbackUrl);
         }
       } catch (error) {
@@ -107,19 +112,64 @@ const AuthForm = ({ type }: { type: string }) => {
       }
     });
   };
+
   const ErrorMessage = ({ message }: { message: string | null }) => {
     if (!message) return null;
     return (
-      <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mt-2">
+      <div className="bg-red-50 p-3 rounded-md text-red-600 text-sm mt-2">
         {message}
       </div>
     );
   };
 
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setIsGoogleLoading(true); // Set Google loading state to true
+
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Get the ID token
+      const idToken = await user.getIdToken();
+
+      // Call your backend to verify the token and create a session
+      const response = await googleSignIn(idToken);
+
+      if (response.code) {
+        // Error occurred
+        setError(response.message || "Google authentication failed");
+        return;
+      }
+
+      // Success - redirect to the callback URL or dashboard
+      console.log("Google login successful:", response.user?.email);
+      router.push(callbackUrl);
+    } catch (error: unknown) {
+      console.error("Google sign-in error:", error);
+
+      if (error instanceof Error && "code" in error) {
+        if (error.code === "auth/popup-closed-by-user") {
+          // User closed the popup, this is not an error
+        } else if (error.code === "auth/popup-blocked") {
+          setError(
+            "Popup was blocked by your browser. Please allow popups for this site."
+          );
+        } else {
+          setError(error.message || "Failed to sign in with Google");
+        }
+      } else {
+        setError("Failed to sign in with Google");
+      }
+    } finally {
+      setIsGoogleLoading(false); // Always reset Google loading state
+    }
+  };
+
   return (
     <section className="auth-form">
-      <header className="flex flex-col items-center gap-5 md:gap-8">
-        <Link href="/" className="cursor-pointer flex items-center gap-1">
+      <header className="flex flex-col gap-5 items-center md:gap-8">
+        <Link href="/" className="flex cursor-pointer gap-1 items-center">
           <Image
             src={applogo}
             width={34}
@@ -127,29 +177,29 @@ const AuthForm = ({ type }: { type: string }) => {
             alt="app logo"
             priority={true}
             loading="eager"
-            className="w-auto h-auto"
+            className="h-auto w-auto"
           />
-          <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
+          <h1 className="text-26 text-black-1 font-bold font-ibm-plex-serif">
             {apptitle}
           </h1>
         </Link>
       </header>
-      <div className="round-xl rounded-xl shadow-lg border border-gray-200 p-6">
-        <div className="flex flex-col items-center gap-1 md:gap-3 pb-4">
-          <h1 className="text-24 lg:text-36 font-semibold text-gray-900">
+      <div className="border border-gray-200 p-6 rounded-xl shadow-lg round-xl">
+        <div className="flex flex-col gap-1 items-center md:gap-3 pb-4">
+          <h1 className="text-24 text-gray-900 font-semibold lg:text-36">
             {signupSuccess
               ? "Successfully!!!"
               : type === "sign-in"
               ? "Sign In"
               : "Sign Up"}
           </h1>
-          <p className="text-16 font-normal text-gray-600">
+          <p className="text-16 text-gray-600 font-normal">
             {signupSuccess ? successMessage : "Please enter your details"}
           </p>
         </div>
         {signupSuccess ? (
-          <div className="flex flex-col items-center gap-4">
-            <Link className="form-link" href="/">
+          <div className="flex flex-col gap-4 items-center">
+            <Link className="form-link" href="/sign-in">
               Back to Sign In
             </Link>
           </div>
@@ -193,7 +243,7 @@ const AuthForm = ({ type }: { type: string }) => {
                 <div className="flex flex-col gap-4">
                   <Button
                     type="submit"
-                    disabled={isPending}
+                    disabled={isLoading} // Disable during any authentication
                     className="form-btn"
                   >
                     {isPending ? (
@@ -207,13 +257,38 @@ const AuthForm = ({ type }: { type: string }) => {
                       "Sign Up"
                     )}
                   </Button>
+                  <Button
+                    type="button"
+                    className="light-btn"
+                    onClick={handleGoogleLogin}
+                    disabled={isLoading} // Disable during any authentication
+                  >
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" /> &nbsp;
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Image
+                          src="/icons/google.svg"
+                          width={34}
+                          height={34}
+                          alt="app logo"
+                          priority={true}
+                          loading="eager"
+                          className="h-auto w-auto"
+                        />
+                        Sign In with Google
+                      </>
+                    )}
+                  </Button>
                   <ErrorMessage message={error} />
-                  {/* Display error message */}
                 </div>
               </form>
             </Form>
             <footer className="flex justify-center gap-1 pt-4">
-              <p className="text-14 font-normal text-gray-600">
+              <p className="text-14 text-gray-600 font-normal">
                 {type === "sign-in"
                   ? "Don't have an account?"
                   : "Already have an account?"}
