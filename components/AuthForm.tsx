@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { googleSignIn, signIn, signUp } from "@/lib/actions/user.actions";
 import { appConfig } from "@/lib/appconfig";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase.config";
+import { auth, googleProvider } from "@/lib/firebase/firebase.config";
 
 const AuthForm = ({ type }: { type: string }) => {
   const apptitle = appConfig.title;

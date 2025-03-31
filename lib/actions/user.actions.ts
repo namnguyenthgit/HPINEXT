@@ -267,6 +267,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 export async function getLoggedInUser() {
   try {
     // Get session from cookies
+    console.log('getLoggedInUser starting...');
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(COOKIE_NAME);
     // If no session exists, return null or throw error
