@@ -2,6 +2,7 @@ import MobileNav from "@/components/MobileNav";
 import { TransitionProvider } from "@/components/PageTransition";
 import Sidebar from "@/components/Sidebar";
 import { getLoggedInUser } from "@/lib/actions/user.actions";
+import { appConfig } from "@/lib/appconfig";
 import Image from "next/image";
 
 export default async function RootLayout({
@@ -11,6 +12,7 @@ export default async function RootLayout({
 }>) {
   //const loggIn = { firstName: "uN70ve", lastName: "Fusion" };
   const loggedIn = await getLoggedInUser();
+  const applogo = appConfig.icon;
   //console.log("Logged-in user:", loggedIn); // Check if user is correctly fetched
 
   return (
@@ -18,7 +20,7 @@ export default async function RootLayout({
       <Sidebar user={loggedIn} />
       <div className="flex size-full flex-col">
         <div className="root-layout">
-          <Image src="/icons/logo.svg" width={30} height={30} alt="logo" />
+          <Image src={applogo} width={30} height={30} alt="logo" />
           <div>
             <MobileNav user={loggedIn} />
           </div>

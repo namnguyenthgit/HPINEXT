@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   title: appConfig.title,
   description: appConfig.description,
   icons: {
-    icon: appConfig.icon,
+    icon: {
+      url: appConfig.icon,
+      type: "image/svg+xml",
+      rel: "icon",
+    },
   },
 };
 

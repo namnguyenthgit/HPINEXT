@@ -12,12 +12,13 @@ import { SiderbarProps } from "@/types";
 const Sidebar = ({ user }: SiderbarProps) => {
   const pathname = usePathname();
   const apptitle = appConfig.title;
+  const applogo = appConfig.icon;
   return (
     <section className="sidebar">
       <nav className="flex flex-col gap-4">
         <Link href="/" className="mb-12 cursor-pointer flex items-center gap-2">
           <Image
-            src="/icons/logo.svg"
+            src={applogo}
             width={34}
             height={34}
             alt="app logo"

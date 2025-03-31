@@ -17,10 +17,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Footer from "./Footer";
 import { appConfig } from "@/lib/appconfig";
+import { MobileNavProps } from "@/types";
 
 const MobileNav = ({ user }: MobileNavProps) => {
   const pathname = usePathname();
   const apptitle = appConfig.title;
+  const applogo = appConfig.icon;
   return (
     <section className="w-fulll max-w-[264px]">
       <Sheet>
@@ -44,12 +46,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
             href="/"
             className="cursor-pointer flex items-center gap-1 px-4"
           >
-            <Image
-              src="/icons/logo.svg"
-              width={34}
-              height={34}
-              alt="app logo"
-            />
+            <Image src={applogo} width={34} height={34} alt="app logo" />
             <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">
               {apptitle}
             </h1>
