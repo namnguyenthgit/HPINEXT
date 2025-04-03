@@ -3,7 +3,6 @@
 import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';  
 import { zaloConfig, ZaloPayResponse } from "../zalo/zalo.config";
 import { NextResponse } from 'next/server';
-import { appConfig} from '../appconfig';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
 import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
@@ -168,6 +167,7 @@ export async function processPayment(
         
         try {
             existingPayportalTrans = await getPayPortalTransByDocNo(lsDocumentNo);
+            console.log("processPayment-getPayPortalTransByDocNo:",existingPayportalTrans);
         } catch (error) {
             console.error(`Error "${error}" while fetching PayPortalTrans, system will let generate QR only!`);
             // If getPayPortalTransByDocNo fails, proceed with new payment processing  
@@ -220,6 +220,7 @@ export async function processPayment(
                 // Case 1: Payment is successful => if order create same amount: update payPortalTrans.status to success otherwise raise error
                 if (existingPayment.return_code === 1) {
                     if (parseInt(amount) != existingPayment.amount){
+                        console.log('Payportal fully paid but got new payment with different amount! warning!');
                         return {  
                             return_code: 2,  
                             return_message: "Update payPortalTrans Failed",  
@@ -233,7 +234,8 @@ export async function processPayment(
                         { status: 'success' }  
                     );  
 
-                    if (!updateSuccess) {  
+                    if (!updateSuccess) {
+                        console.log('Payportal fully paid but got new payment with same amount then fail to update status to "success"');
                         return {  
                             return_code: 2,  
                             return_message: "Update payPortalTrans Failed",  
@@ -241,7 +243,7 @@ export async function processPayment(
                             payPortalOrder: existingPayportalTrans.payPortalOrder  
                         };  
                     }  
-
+                    console.log('Payportal fully paid but got new payment with same amount, system sucessfully update status to "success"!');
                     return {  
                         return_code: 3,  
                         return_message: "Payment Already Completed",  
@@ -266,6 +268,7 @@ export async function processPayment(
                     //console.error(`amount:${amount}, existingPayment.amount:${existingPayment.amount}, payPortalName:${payPortalName}, existingPayportalTrans.payPortalName:${existingPayportalTrans.payPortalName}`)
                     if (parseInt(amount) == existingPayportalTrans.amount && payPortalName == existingPayportalTrans.payPortalName) {
                         try {
+                            console.log('Payment waiting for checkout, but got incoming payment with different channel or email! system update new info and return existing QR!');
                             if (channel != existingPayportalTrans.channel || email != existingPayportalTrans.mail ){
                                 await safeUpdatePayPortalTrans(  
                                     existingPayportalTrans.$id,  
@@ -302,7 +305,7 @@ export async function processPayment(
             }  
 
             // Case 3: Payment failed or expired - generate new QR  
-            //console.log(`Generating new QR for payment ${existingPayportalTrans.payPortalOrder}`);  
+            console.log(`Pay ment fail or expired, system will generate new QR for user!`);  
             const result = await processPaymentByPortal(  
                 payPortalName,  
                 email,  
@@ -336,7 +339,8 @@ export async function processPayment(
 
             return result;  
 
-        } else {  
+        } else {
+            console.log('There is no existing payment order, system will generate new QR for user!');  
             const result = await processPaymentByPortal(  
                 payPortalName,  
                 email,  
@@ -360,6 +364,7 @@ export async function processPayment(
                 });
 
                 if (!newTransaction && channel != 'lsretail') {
+                    console.log('Fail to create payment return error for user using website!');
                     return {  
                         return_code: 2,  
                         return_message: "Update Failed",  
@@ -578,6 +583,7 @@ async function checkExistingPaymentStatus(
     }
 
     try {
+        console.log(`payportal.action checking existing payment status for portal: ${payPortalName}...`);
         switch (payPortalName.toLowerCase()) {
             case 'zalopay':
                 return await queryZalopayOrder(app_trans_id);

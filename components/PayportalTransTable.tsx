@@ -90,8 +90,10 @@ export function PayportalTransTable({ transactions }: TransactionsTableProps) {
               <RawCopy
                 value={transaction.payPortalOrder}
                 title={
-                  transaction.payPortalOrder?.substring(11, 18) ||
-                  "PayPortal Order No"
+                  transaction.payPortalName === "zalopay"
+                    ? transaction.payPortalOrder?.substring(11, 18) ||
+                      "PayPortal Order No"
+                    : `${transaction.payPortalName.toUpperCase()} Order No`
                 }
               />
             </TableCell>

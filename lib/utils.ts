@@ -50,6 +50,13 @@ const defaultOptions: DateTimeFormatOptions = {
   },  
 };  
 
+export interface StringGeneratorOptions {  
+  length?: number;  
+  includeLowercase?: boolean;  
+  includeUppercase?: boolean;  
+  includeNumbers?: boolean;  
+  includeSpecial?: boolean;  
+}
 export const formatDateTime = (  
   dateString: Date,  
   locale: string = "en-US",  
@@ -297,22 +304,44 @@ export const authFormSchema = (type: string) => z.object({
   password: z.string().min(8),
 })
 
-export function generateUniqueString(length?: number): string {  
-  // Default length is 5 if not provided  
-  const requestedLength = length || 5;  
+export function generateUniqueString(options?: StringGeneratorOptions): string {  
+  // Set default options  
+  const config = {  
+    length: options?.length || 5,  
+    includeLowercase: options?.includeLowercase ?? true,  
+    includeUppercase: options?.includeUppercase ?? false,  
+    includeNumbers: options?.includeNumbers ?? true,  
+    includeSpecial: options?.includeSpecial ?? false,  
+  };  
   
   // Validate length  
-  if (requestedLength < 1 || requestedLength > 32) {  
-      throw new Error('Length must be between 1 and 32 characters');  
+  if (config.length < 1 || config.length > 32) {  
+    throw new Error('Length must be between 1 and 32 characters');  
   }  
-
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';  
-  let result = '';  
   
-  // Generate random string of requested length  
-  for (let i = 0; i < requestedLength; i++) {  
-      const randomIndex = Math.floor(Math.random() * characters.length);  
-      result += characters.charAt(randomIndex);  
+  // Prepare character sets  
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';  
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  
+  const numbers = '0123456789';  
+  const special = '!@#$%^&*()_+-=[]{}|;:,.<>?';  
+  
+  // Build character pool based on options  
+  let characters = '';  
+  if (config.includeLowercase) characters += lowercase;  
+  if (config.includeUppercase) characters += uppercase;  
+  if (config.includeNumbers) characters += numbers;  
+  if (config.includeSpecial) characters += special;  
+  
+  // Ensure at least one character type is selected  
+  if (characters.length === 0) {  
+    characters = uppercase + numbers; // Default to original behavior  
+  }  
+  
+  // Generate random string  
+  let result = '';  
+  for (let i = 0; i < config.length; i++) {  
+    const randomIndex = Math.floor(Math.random() * characters.length);  
+    result += characters.charAt(randomIndex);  
   }  
   
   return result;  

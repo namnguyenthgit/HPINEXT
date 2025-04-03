@@ -267,7 +267,7 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 export async function getLoggedInUser() {
   try {
     // Get session from cookies
-    console.log('getLoggedInUser starting...');
+    //console.log('getLoggedInUser starting...');
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(COOKIE_NAME);
     // If no session exists, return null or throw error
@@ -306,34 +306,3 @@ export const logoutAccount = async () => {
     return { success: false };
   }
 }
-
-export async function googleSignIn(token: string) {
-  try {
-    // Call your backend API to verify the token  
-    const response = await fetch(`${BASE_URL}/api/auth/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        code: response.status,
-        message: data.message || 'Google authentication failed',
-        type: data.type || 'google_auth_error',
-      };
-    }
-    return data;
-  } catch (error) {
-    console.error('Google sign-in error:', error);
-    return {
-      code: 500,
-      message: 'Internal server error during Google authentication',
-      type: 'server_error',
-    };
-  }
-} 
