@@ -4,6 +4,7 @@ import { payWithGalaxyQRParams } from "@/types";
 import { galaxyConfig, GalaxyEndpoint, GalaxypayResponse, getEndpointUrl, isSandboxMode } from "../galaxypay/galaxy.config";
 import { genDateTimeNow, generateUID, generateUniqueString, hashWithSHA256 } from "../utils";
 import { PaymentResponse } from './payportal.actions';
+import { appConfig } from "../appconfig";
 
 interface GalaxyPayQueryResponse {  
     requestID: string;  
@@ -27,7 +28,6 @@ interface GalaxyPayTransactionData {
     orderDateTime: string;  
     orderDescription: string;  
   }
-
 async function makeGalaxypayRequest<T = GalaxypayResponse>(endpoint: GalaxyEndpoint, data: Record<string, unknown>) : Promise<T> {
     try {
         if (isSandboxMode()){
@@ -79,8 +79,9 @@ async function makeGalaxypayRequest<T = GalaxypayResponse>(endpoint: GalaxyEndpo
 
 export async function payWithGalaxyQR(params:payWithGalaxyQRParams) : Promise<GalaxypayResponse> {
     const {orderNumber, orderAmount, orderDescription} = params;
+    const calbackurl = `${appConfig.baseurl}/api/payportal/callback/galaxypay`;
     const request = {
-        requestID: generateUID(),
+        requestID:  generateUniqueString({length: 32}),
         requestDateTime: genDateTimeNow(),
         requestData: {
             apiOperation: "PAY",
@@ -91,7 +92,12 @@ export async function payWithGalaxyQR(params:payWithGalaxyQRParams) : Promise<Ga
             orderDateTime: genDateTimeNow(),
             orderDescription: orderDescription,
             paymentMethod: "QRPAY",
-            sourceType: "QRPAY"
+            sourceType: "QRPAY",
+            successURL:calbackurl,
+            failureURL:calbackurl,
+            cancelURL:calbackurl,
+            ipnURL:calbackurl,
+                
         }
     };
 
@@ -100,7 +106,7 @@ export async function payWithGalaxyQR(params:payWithGalaxyQRParams) : Promise<Ga
 
 export async function queryGalaxyPayOrder(transactionID: string): Promise<PaymentResponse> {  
     try {  
-        const requestID = generateUniqueString({length: 5});  
+        const requestID = generateUniqueString({length: 32});  
         const requestDateTime = genDateTimeNow();  
         
         const request = {  

@@ -5,7 +5,7 @@ import { zaloConfig, ZaloPayResponse } from "../zalo/zalo.config";
 import { NextResponse } from 'next/server';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
 import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
-import { lsApiDocReturn, ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
+import { ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
 import { payWithGalaxyQR, queryGalaxyPayOrder } from './galaxypay.actions';
 
 // Common types for all payment portals  
@@ -84,6 +84,18 @@ export async function queryPayment(
             case 'zalopay':  
                 if (existingPayportalTrans.payPortalOrder) {  
                     paymentStatus = await queryZalopayOrder(existingPayportalTrans.payPortalOrder);  
+                } else {  
+                    return {  
+                        return_code: 2,  
+                        return_message: "Invalid payPortalTrans",  
+                        sub_return_code: -400,  
+                        sub_return_message: "payPortalTrans missing payment payPortalOrder"  
+                    };  
+                }  
+                break;
+            case 'galaxypay':
+                if (existingPayportalTrans.payPortalOrder) {  
+                    paymentStatus = await queryGalaxyPayOrder(existingPayportalTrans.payPortalOrder);  
                 } else {  
                     return {  
                         return_code: 2,  
@@ -473,6 +485,7 @@ export async function parseCallbackData(
                         rawCallback: rawdata.data
                     }
                 }
+            //other payment portal callback data parsing logic
             default:  
                 return {  
                     parsedData: null,  
