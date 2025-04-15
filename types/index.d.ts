@@ -463,7 +463,7 @@ interface ZaloPayCallback extends PayPortalCallbackData {
 interface RawCallbackData {  
   data: string;  
   mac?: string;  
-  type?: number;  
+  type?: number;
 }
 
 interface parsedPPTCallbackData {

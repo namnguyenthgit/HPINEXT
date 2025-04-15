@@ -4,9 +4,10 @@ import { createZalopayOrder, queryZalopayOrder } from './zalopay.actions';
 import { zaloConfig, ZaloPayResponse } from "../zalo/zalo.config";
 import { NextResponse } from 'next/server';
 import { createPayPortalTrans, getPayPortalTransByDocNo, getPPTransByColumnName, updatePayPortalTrans } from './payportaltrans.actions';
-import { generateUniqueString, parseStringify, verifyHmacSHA256 } from '../utils';
+import { decodeBase64Json, generateUniqueString, parseStringify, verifyHmacSHA256, verifySHA256 } from '../utils';
 import { ParsedPPTCallbackDataAccept, PayPortalCallbackResult, RawCallbackData } from '@/types';
 import { payWithGalaxyQR, queryGalaxyPayOrder } from './galaxypay.actions';
+import { galaxyConfig } from '../galaxypay/galaxy.config';
 
 // Common types for all payment portals  
 export interface PaymentRequest {  
@@ -473,7 +474,7 @@ export async function parseCallbackData(
     rawdata: RawCallbackData  
 ): Promise<ParsedPPTCallbackDataAccept> {
     try {
-        switch (portal) {  
+        switch (portal) {
             case 'zalopay':
                 const parsedCallbackData = JSON.parse(rawdata.data);
                 return {  
@@ -484,6 +485,57 @@ export async function parseCallbackData(
                         callbackamount: parsedCallbackData.amount,  
                         rawCallback: rawdata.data
                     }
+                }
+            case 'galaxypay':
+                // Use type assertion to add signature  
+                const galaxyData = rawdata as RawCallbackData & { signature: string };
+
+                // Parse the JSON from rawdata.data  
+                const { data, signature } = galaxyData;  
+                
+                // Verify the signature with our generic utility function  
+                const salt = galaxyConfig.salt;
+                const isValid = verifySHA256(data, signature, salt);  
+                //console.log("isValid:",isValid);
+                if (!isValid) {  
+                    return {  
+                        parsedData: null,  
+                        error: 'Invalid signature for GalaxyPay callback'  
+                    };  
+                }  
+                
+                // Decode the data using our generic utility function  
+                // Decode the base64 data  
+                const decodedData = decodeBase64Json(data) as {  
+                    requestID: string;  
+                    responseDateTime: string;  
+                    responseCode: string;  
+                    responseMessage: string;  
+                    responseData: {  
+                        transactionID: string;  
+                        transactionDateTime: string;  
+                        orderID: string;  
+                        orderNumber: string;  
+                        orderAmount: string;  
+                        orderDescription: string;  
+                        orderCurrency: string;  
+                        orderDateTime: string;  
+                        language: string;  
+                    }  
+                };
+                
+                
+                // Extract data from the responseData field  
+                const { responseData } = decodedData; 
+                
+                return {  
+                    parsedData: {  
+                        payPortalOrder: responseData.orderNumber,  
+                        callbackProviderTransId: responseData.transactionID,  
+                        callbackPaymentTime: responseData.transactionDateTime,  
+                        callbackamount: responseData.orderAmount,  
+                        rawCallback: rawdata.data  
+                    }  
                 }
             //other payment portal callback data parsing logic
             default:  
@@ -498,7 +550,6 @@ export async function parseCallbackData(
             error: `Can not parse ${portal} callbackdata error:"${error}`
         };
     }
-     
 } 
 
 export async function processCallback(  

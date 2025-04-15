@@ -229,8 +229,30 @@ export function verifyHmacSHA256(originalData: string, key: string, hashToVerify
 
 //Galaxypay
 export const hashWithSHA256 = (plainText: string) => {
-  return CryptoJS.SHA256(plainText);
+  return CryptoJS.SHA256(plainText).toString();
 };
+
+// Generic SHA256 verification function (galaxypay) 
+export const verifySHA256 = (data: string, signature: string, salt: string): boolean => {  
+  // Calculate hash: SHA256(data + salt)  
+  const calculatedHash = CryptoJS.SHA256(data + salt).toString();  
+  // Compare with the provided signature  
+  return calculatedHash === signature;  
+}; 
+
+// Generic base64 decode and JSON parse function (galaxypay)
+export const decodeBase64Json = (encodedData: string): unknown => {  
+  try {  
+    // Decode base64 string  
+    const decodedString = atob(encodedData);  
+    // Parse the JSON  
+    return JSON.parse(decodedString);  
+  } catch (error) {  
+    console.error('Error decoding base64 JSON data:', error);  
+    throw new Error('Failed to decode base64 JSON data');  
+  }  
+};  
+
 
 export const genDateTimeNow = () => {
   return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
