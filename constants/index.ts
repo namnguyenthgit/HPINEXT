@@ -33,11 +33,6 @@ export const sidebarLinks = [
     label: "Home",
   },
   {
-    imgURL: "/icons/transaction.svg",
-    route: "/transaction-history",
-    label: "Transaction History",
-  },
-  {
     imgURL: "/icons/money-send.svg",
     route: "/payment-transfer",
     label: "Payment Portals",
