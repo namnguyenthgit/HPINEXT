@@ -527,12 +527,30 @@ export async function parseCallbackData(
                 
                 // Extract data from the responseData field  
                 const { responseData } = decodedData; 
-                
+                // Galaxy Pay uses format "YYYYMMDDHHmmss"  
+                const transactionDateTime = responseData.transactionDateTime || decodedData.responseDateTime;  
+                let formattedDateTime;
+                if (transactionDateTime && transactionDateTime.length >= 14) {  
+                    // Extract components from the datetime string  
+                    const year = transactionDateTime.substring(0, 4);  
+                    const month = transactionDateTime.substring(4, 6);  
+                    const day = transactionDateTime.substring(6, 8);  
+                    const hour = transactionDateTime.substring(8, 10);  
+                    const minute = transactionDateTime.substring(10, 12);  
+                    const second = transactionDateTime.substring(12, 14);  
+                    
+                    // Create ISO format: YYYY-MM-DDTHH:MM:SS  
+                    formattedDateTime = `${year}-${month}-${day}T${hour}:${minute}:${second}+07:00`;  
+                } else {  
+                    // Fallback to current time if format is invalid  
+                    formattedDateTime = new Date().toISOString();  
+                }
+
                 return {  
                     parsedData: {  
                         payPortalOrder: responseData.orderNumber,  
                         callbackProviderTransId: responseData.transactionID,  
-                        callbackPaymentTime: responseData.transactionDateTime,  
+                        callbackPaymentTime: formattedDateTime,  
                         callbackamount: responseData.orderAmount,  
                         rawCallback: rawdata.data  
                     }  
@@ -565,6 +583,7 @@ export async function processCallback(
     
     try {
         const parsedCallbackData = await parseCallbackData(portal,data);
+        //console.log("parsedCallbackData:",parsedCallbackData);
         if (!parsedCallbackData.parsedData){
             return {
                 success: false,
@@ -574,11 +593,13 @@ export async function processCallback(
         const callbackDataProccess = parsedCallbackData.parsedData;
         let callbackInternalCheckErr: string | undefined;
         const payment_time = new Date(callbackDataProccess.callbackPaymentTime).toISOString();
-        const payPortalTrans = await getPPTransByColumnName('payPortalOrder', callbackDataProccess.payPortalOrder);
-
+        const payPortalTrans = await getPPTransByColumnName(portal === 'zalopay' ? 'payPortalOrder' : 'lsDocumentNo', callbackDataProccess.payPortalOrder);
+        console.log("payPortalTrans:",payPortalTrans);
         if (!payPortalTrans) {
-            callbackInternalCheckErr = `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`
-    
+            return {  
+                success: false,  
+                message: `${portal} Callback Order ${callbackDataProccess.payPortalOrder} do not exsits in PayPortalTrans!!!`  
+            }; 
         } else {
             console.log("callbackDataProccess:",callbackDataProccess);
             const requestAmount = Number(payPortalTrans.amount);  

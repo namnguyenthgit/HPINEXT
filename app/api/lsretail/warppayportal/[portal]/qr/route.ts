@@ -1,39 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";  
 import { processPayment } from "@/lib/actions/payportal.actions";
+import { generateChecksum, validatePortalName } from "@/lib/utils";
 
 type Props = {  
     params: {  
         portal: string  
-    }  
-}  
-
-// Type for valid payment portals  
-type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
-
-function generateChecksum(): string {  
-    return Array.from(  
-        { length: 32 },   
-        () => Math.floor(Math.random() * 16).toString(16)  
-    ).join('').toUpperCase();  
-}
-
-// Function to validate and map portal names  
-function validatePortalName(portal: string): ValidPayPortal {  
-    // Convert to lowercase and remove any test suffix  
-    const normalizedPortal = portal.toLowerCase().replace('test', '');  
-    
-    switch (normalizedPortal) {  
-        case 'vnpay':  
-            return 'vnpay';  
-        case 'zalopay':  
-            return 'zalopay';  
-        case 'ocbpay':  
-        case 'ocb':  
-            return 'ocbpay';  
-        case 'galaxypay':  
-            return 'galaxypay';  
-        default:  
-            throw new Error(`Invalid payment portal: ${portal}`);  
     }  
 }  
 

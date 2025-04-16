@@ -367,4 +367,42 @@ export function generateUniqueString(options?: StringGeneratorOptions): string {
   }  
   
   return result;  
+}
+
+// Type for valid payment portals  
+export type ValidPayPortal = "vnpay" | "zalopay" | "ocbpay" | "galaxypay";  
+
+/**  
+ * Validates and normalizes payment portal names  
+ * @param portal - The portal name to validate  
+ * @returns The normalized ValidPayPortal value  
+ * @throws Error if portal name is invalid  
+ */  
+export function validatePortalName(portal: string): ValidPayPortal {  
+  // Convert to lowercase and remove any test suffix  
+  const normalizedPortal = portal.toLowerCase().replace('test', '');  
+  
+  switch (normalizedPortal) {  
+    case 'vnpay':  
+      return 'vnpay';  
+    case 'zalopay':  
+      return 'zalopay';  
+    case 'ocbpay':  
+      return 'ocbpay';  
+    case 'galaxypay':  
+      return 'galaxypay';  
+    default:  
+      throw new Error(`Invalid payment portal: ${portal}`);  
+  }  
 }  
+
+/**  
+ * Generates a random 32-character hexadecimal checksum  
+ * @returns Uppercase hexadecimal string  
+ */  
+export function generateChecksum(): string {  
+  return Array.from(  
+    { length: 32 },  
+    () => Math.floor(Math.random() * 16).toString(16)  
+  ).join('').toUpperCase();  
+}

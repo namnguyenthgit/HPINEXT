@@ -201,7 +201,7 @@ export const getPayPortalTransByStores = async (
 export const getPPTransByColumnName = async (column_name: string, value: string): Promise<PayPortalTrans> => {
   try {
 
-    //console.log('getTransactionsByDocNo Input lsDocumentNo:', lsDocumentNo);
+    console.log('getTransactionsByDocNo Input lsDocumentNo:', value);
     const { database } = await createAdminClient();
 
     const payPortalTrans = await database.listDocuments(
