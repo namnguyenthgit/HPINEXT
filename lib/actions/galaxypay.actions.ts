@@ -93,9 +93,9 @@ export async function payWithGalaxyQR(params:payWithGalaxyQRParams) : Promise<Ga
             orderDescription: orderDescription,
             paymentMethod: "QRPAY",
             sourceType: "QRPAY",
-            successURL:calbackurl,
-            failureURL:calbackurl,
-            cancelURL:calbackurl,
+            //successURL:calbackurl,
+            //failureURL:calbackurl,
+            //cancelURL:calbackurl,
             ipnURL:calbackurl,
                 
         }
