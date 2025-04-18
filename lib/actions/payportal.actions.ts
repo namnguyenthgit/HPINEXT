@@ -418,7 +418,7 @@ async function processPaymentByPortal(
             const dd = String(today.getDate()).padStart(2, '0');  
             const dateFormat = `${yy}${mm}${dd}`;  
 
-            const uniqueString = generateUniqueString();
+            const uniqueString = generateUniqueString({ includeLowercase: false, includeUppercase : true });
 
             // Format app_trans_id according to ZaloPay requirements  
             const app_trans_id = `${dateFormat}_${terminalId}_${uniqueString}_${lsDocumentNo}`;

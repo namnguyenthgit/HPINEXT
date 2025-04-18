@@ -84,8 +84,10 @@ export async function POST(request: NextRequest, context: Props) {
                     documentNo: txnId,
                     portalName: validPortalName
                 });  
-
-                if (paymentResult.return_code === 1) {  
+                //console.log(`ACTION:queryPayment-${validPortalName} Response:`, paymentResult);
+                if (paymentResult.return_code === 1) {
+                    const qrTrace = portal === "zalopay" ? paymentResult.zp_trans_id : paymentResult.transactionID;
+                    const amount = String(paymentResult.amount);
                     return NextResponse.json({  
                         code: "00",  
                         message: `${portal} Payment sucessful`,  
@@ -95,10 +97,10 @@ export async function POST(request: NextRequest, context: Props) {
                         billNumber: txnId,
                         txnId: txnId,
                         payDate: null,
-                        qrTrace: paymentResult.zp_trans_id,
+                        qrTrace: qrTrace,
                         bankCode: null,
-                        debitAmount: String(paymentResult.amount),
-                        realAmount: String(paymentResult.amount),
+                        debitAmount: amount,
+                        realAmount: amount,
                         checkSum: generateChecksum() 
                     }, { status: 200 });  
                 } else {  

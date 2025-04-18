@@ -118,7 +118,7 @@ export async function queryGalaxyPayOrder(transactionID: string): Promise<Paymen
         };  
 
         const response = await makeGalaxypayRequest<GalaxyPayQueryResponse>('query', request);  
-        console.log('Full response:', JSON.stringify(response, null, 2));  
+        //console.log('Full response:', JSON.stringify(response, null, 2));  
         
         // Parse the responseData string into an object  
         let responseData: GalaxyPayTransactionData | null = null;  
@@ -129,7 +129,7 @@ export async function queryGalaxyPayOrder(transactionID: string): Promise<Paymen
                 console.error('Failed to parse responseData:', e);  
             }  
         }  
-        console.log('Parsed responseData:', responseData);  
+        //console.log('Parsed responseData:', responseData);  
         
         // Map GalaxyPay status to generic format  
         let return_code = 2; // Default to error  
@@ -140,7 +140,7 @@ export async function queryGalaxyPayOrder(transactionID: string): Promise<Paymen
         if (responseCodeNum === 200) {  
             if (responseData?.transactionStage) {  
                 const stage = responseData.transactionStage;  
-                console.log(`Transaction stage: "${stage}"`);  
+                //console.log(`Transaction stage: "${stage}"`);  
                 
                 if (stage === "SUCCESSFUL") {  
                     return_code = 1; // Success  
@@ -154,7 +154,8 @@ export async function queryGalaxyPayOrder(transactionID: string): Promise<Paymen
             return_code,  
             return_message: responseData?.transactionDescription || response.responseMessage || "",  
             sub_return_code: responseData?.transactionStatus ? parseInt(responseData.transactionStatus) : 0,  
-            sub_return_message: responseData?.transactionDescription || "",  
+            sub_return_message: responseData?.transactionDescription || "",
+            transactionID: responseData?.transactionID || "",  
             amount: responseData?.orderAmount ? parseFloat(responseData.orderAmount) : 0,
             is_processing: return_code === 3,  
         };  
