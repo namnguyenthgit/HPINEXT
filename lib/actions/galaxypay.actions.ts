@@ -142,7 +142,7 @@ export async function queryGalaxyPayOrder(transactionID: string): Promise<Paymen
                 const stage = responseData.transactionStage;  
                 console.log(`Transaction stage: "${stage}"`);  
                 
-                if (stage === "SUCCESS") {  
+                if (stage === "SUCCESSFUL") {  
                     return_code = 1; // Success  
                 } else if (stage === "PROCESSING") {  
                     return_code = 3; // Processing  
